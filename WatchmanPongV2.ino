@@ -1,5 +1,5 @@
 /*
-  Pong Game for Sony Watchman
+  Pong game for Sony Watchman
   Sideburn Studios - August 2025
 */
 
@@ -32,8 +32,6 @@ boolean lastSwitchState = HIGH;  // assume HIGH = attract off at startup
 
 
 // Computer AI variables
-byte aiSpeed = 4;      // Increased from 2 - How fast the computer paddle moves
-byte aiDelay = 1;      // Decreased from 3 - Computer reacts faster
 float aiPaddleTarget = 44.0;  // Target position for smooth AI movement
 float aiPaddleFloat = 44.0;   // Floating point position for smooth movement
 float maxAiSpeed = 2.5;       // Maximum pixels per frame the AI can move
@@ -54,24 +52,10 @@ byte lastPaddleAy = 44;  // Track last paddle position for deadzone
 
 TVout tv;
 
-// Allow the overall speed of the game to be adjusted.
-//float speedAdjust = 1.0;
-
-void setup() {
-  // If pin 12 is pulled LOW, then the PAL jumper is shorted.
-  pinMode(12, INPUT);
-  digitalWrite(12, HIGH);
-  
+void setup() {  
   // Set up D10 as attract mode switch
   pinMode(GAME_START, INPUT_PULLUP);  // D10 with internal pull-up
-
-  // if (digitalRead(12) == LOW) {
-  //   tv.begin(_PAL, W, H);
-  //   // Since PAL processing is faster, we need to slow the game play down.
-  //   speedAdjust = 1.4;
-  // } else {
-    tv.begin(NTSC, W, H);
-  //}
+  tv.begin(NTSC, W, H);
 
   tv.select_font(font6x8);
   randomSeed(analogRead(0));
@@ -160,7 +144,6 @@ void pong() {
     tv.set_pixel(ballx + 1, bally + 1, 1);
   }
 
-  //delay(4);
   tv.delay(1);
 }
 
