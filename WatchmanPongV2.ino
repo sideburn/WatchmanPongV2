@@ -801,6 +801,14 @@ void updateComputerPaddle() {
       if (targetPaddlePos > H - paddleLength - 1) targetPaddlePos = H - paddleLength - 1;
     }
     
+    // BOUNDARY FIX: If paddle will be at boundary, offset targeting to avoid center hits
+    if (targetPaddlePos <= 1 || targetPaddlePos >= H - paddleLength - 1) {
+      targetPaddlePos += random(-3, 4);  // Add random offset when at boundary
+      // Re-constrain after adding offset
+      if (targetPaddlePos < 1) targetPaddlePos = 1;
+      if (targetPaddlePos > H - paddleLength - 1) targetPaddlePos = H - paddleLength - 1;
+    }
+    
     // Add speed-based errors
     if (speedLevel >= 1) { //must be at least speed level 1
 
@@ -919,6 +927,14 @@ void updatePlayerAI() {
       }
       
       // Constrain to valid range
+      if (targetPaddlePos < 1) targetPaddlePos = 1;
+      if (targetPaddlePos > H - paddleLength - 1) targetPaddlePos = H - paddleLength - 1;
+    }
+    
+    // BOUNDARY FIX: If paddle will be at boundary, offset targeting to avoid center hits
+    if (targetPaddlePos <= 1 || targetPaddlePos >= H - paddleLength - 1) {
+      targetPaddlePos += random(-3, 4);  // Add random offset when at boundary
+      // Re-constrain after adding offset
       if (targetPaddlePos < 1) targetPaddlePos = 1;
       if (targetPaddlePos > H - paddleLength - 1) targetPaddlePos = H - paddleLength - 1;
     }
