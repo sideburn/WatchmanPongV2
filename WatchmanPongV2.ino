@@ -16,6 +16,7 @@
 int ballx, bally;
 char dx;
 char dy;
+boolean ballServing = false;  // Track if ball is waiting to serve
 byte paddleAy = 44;           // Computer paddle (left side)
 byte paddleBy = 44;           // Human paddle (right side)
 byte paddleAx = 2;            // Computer paddle X position
@@ -164,13 +165,14 @@ void pong() {
   drawNet();
   drawPaddles();
 
-  if (dy == 0) {
+  if (ballServing && dy == 0) {
     // Ball auto-serves immediately instead of waiting
     if (random(0, 2) == 0) {
       dy = 1;
     } else {
       dy = -1;
     }
+    ballServing = false;  // No longer serving
   }
 
   // Erase old ball position - but only if not in score area
@@ -213,6 +215,7 @@ void moveBall() {
     bally = random(H / 4, (3 * H) / 4);
     dx = -1;
     dy = 0;
+    ballServing = true;  // Ball is now serving
   }
   if (ballx >= (W + 2)) {
     rallyCount = 0;  // Reset rally counter
@@ -231,6 +234,7 @@ void moveBall() {
     bally = random(H / 4, (3 * H) / 4);
     dx = 1;
     dy = 0;
+    ballServing = true;  // Ball is now serving
   }
 
   // Calculate movement distances based on speed level
@@ -298,9 +302,21 @@ void moveBall() {
     dx = -dx;  // Reverse horizontal direction
     ballx += dx;  // Move ball back out of paddle
     
-    // Temporarily disable angle speed - fixed dy for testing rally speed
-    if (dy == 0) {
-      dy = (random(0, 2) == 0) ? 1 : -1;  // Random initial direction
+    // Center hit detection and angle calculation
+    float ballCenterY = bally + 1;  // Center of 2x2 ball
+    float paddleCenterY = paddleAy + (paddleLength / 2.0);
+    float hitOffset = ballCenterY - paddleCenterY;
+    
+    if (abs(hitOffset) <= 1.0) {
+      // Center hit - pure horizontal trajectory
+      dy = 0;
+    } else {
+      // Off-center hit - give it vertical angle based on hit position
+      if (hitOffset > 0) {
+        dy = 1;  // Hit bottom half, go down
+      } else {
+        dy = -1; // Hit top half, go up  
+      }
     }
     
     hitSound();
@@ -321,9 +337,21 @@ void moveBall() {
       dx = -dx;  // Reverse horizontal direction  
       ballx += dx;  // Move ball back out of paddle
       
-      // Temporarily disable angle speed - fixed dy for testing rally speed
-      if (dy == 0) {
-        dy = (random(0, 2) == 0) ? 1 : -1;  // Random initial direction
+      // Center hit detection and angle calculation
+      float ballCenterY = bally + 1;  // Center of 2x2 ball
+      float paddleCenterY = paddleBy + (paddleLength / 2.0);
+      float hitOffset = ballCenterY - paddleCenterY;
+      
+      if (abs(hitOffset) <= 1.0) {
+        // Center hit - pure horizontal trajectory
+        dy = 0;
+      } else {
+        // Off-center hit - give it vertical angle based on hit position
+        if (hitOffset > 0) {
+          dy = 1;  // Hit bottom half, go down
+        } else {
+          dy = -1; // Hit top half, go up  
+        }
       }
       
       hitSound();
@@ -525,10 +553,6 @@ void bounceSound() {
   if (!attractMode) playTone(261, 20);  // Only play sound if not in attract mode
 }
 
-// void missSound() {
-//   if (!attractMode) playTone(105, 500);  // Only play sound if not in attract mode
-// }
-
 void missSound() {
   if (!attractMode) {
     for (int i = 0; i < 19; i++) {
@@ -537,7 +561,6 @@ void missSound() {
     }
   }
 }
-
 
 void drawNet() {
   for (byte y = 0; y < H - 4; y = y + 8) {
@@ -737,6 +760,7 @@ void initPong() {
   bally = random(56, 73);
   dx = 1;
   dy = 0;
+  ballServing = true;  // Ball starts in serving mode
   score = 0;
   score2 = 0;
   rallyCount = 0;    // Reset rally counter
@@ -768,8 +792,23 @@ void updateComputerPaddle() {
       // Ball is very low - position paddle at bottom to catch it  
       targetPaddlePos = H - paddleLength - 1;
     } else {
-      // Ball is in middle area - center paddle on ball
-      targetPaddlePos = ballCenter - (paddleLength / 2);
+      // Ball is in middle area - vary targeting strategy for more interesting gameplay
+      
+      // Choose different targeting strategies
+      int strategy = random(0, 100);
+      
+      if (strategy < 30) {
+        // 30% - Try to hit ball with top third of paddle (create downward angle)
+        targetPaddlePos = ballCenter - paddleLength + 2;
+      } else if (strategy < 60) {
+        // 30% - Try to hit ball with bottom third of paddle (create upward angle)  
+        targetPaddlePos = ballCenter - 2;
+      } else {
+        // 40% - Center the paddle normally (mix of center and slight angles)
+        targetPaddlePos = ballCenter - (paddleLength / 2);
+        // Add small random variation
+        targetPaddlePos += random(-1, 2);
+      }
       
       // Constrain to valid range
       if (targetPaddlePos < 1) targetPaddlePos = 1;
@@ -875,8 +914,23 @@ void updatePlayerAI() {
       // Ball is very low - position paddle at bottom to catch it  
       targetPaddlePos = H - paddleLength - 1;
     } else {
-      // Ball is in middle area - center paddle on ball
-      targetPaddlePos = ballCenter - (paddleLength / 2);
+      // Ball is in middle area - vary targeting strategy (slightly different from computer)
+      
+      // Choose different targeting strategies  
+      int strategy = random(0, 100);
+      
+      if (strategy < 35) {
+        // 35% - Try to hit ball with top third of paddle (create downward angle)
+        targetPaddlePos = ballCenter - paddleLength + 2;
+      } else if (strategy < 65) {
+        // 30% - Try to hit ball with bottom third of paddle (create upward angle)  
+        targetPaddlePos = ballCenter - 2;
+      } else {
+        // 35% - Center the paddle normally
+        targetPaddlePos = ballCenter - (paddleLength / 2);
+        // Add small random variation
+        targetPaddlePos += random(-1, 2);
+      }
       
       // Constrain to valid range
       if (targetPaddlePos < 1) targetPaddlePos = 1;
