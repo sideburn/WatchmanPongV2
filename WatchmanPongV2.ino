@@ -12,6 +12,10 @@
 #define H 98
 #define GAME_START 10  // D10 switch for attract mode control
 
+#define MAX_SCORE 9
+
+#define BUFFER_SIZE 12  // Increase for more smoothing (8=current, 16=very smooth, 6=more responsive)
+
 // Pong variables
 int ballx, bally;
 char dx;
@@ -48,7 +52,6 @@ float playerMaxSpeed = 0.9;   // Slower than computer AI
 float playerAiMomentum = 0.0; // Player AI momentum
 
 // Paddle smoothing variables - ADJUST THESE FOR FINE TUNING
-#define BUFFER_SIZE 12  // Increase for more smoothing (8=current, 16=very smooth, 6=more responsive)
 int paddleBuffer[BUFFER_SIZE];
 byte bufferIndex = 0;
 boolean bufferFilled = false;
@@ -206,7 +209,7 @@ void moveBall() {
     drawNet();
     missSound();
     tv.delay(1500);
-    if (!attractMode && score2 == 9) {
+    if (!attractMode && score2 == MAX_SCORE) {
       gameOver();
       initAttractScreen();
       return;
@@ -225,7 +228,7 @@ void moveBall() {
     drawScore();
     missSound();
     tv.delay(1500);
-    if (!attractMode && score == 9) {
+    if (!attractMode && score == MAX_SCORE) {
       gameOver();
       initAttractScreen();
       return;
@@ -792,24 +795,7 @@ void updateComputerPaddle() {
       // Ball is very low - position paddle at bottom to catch it  
       targetPaddlePos = H - paddleLength - 1;
     } else {
-      // Ball is in middle area - vary targeting strategy for more interesting gameplay
-      
-      // Choose different targeting strategies
-      int strategy = random(0, 100);
-      
-      if (strategy < 30) {
-        // 30% - Try to hit ball with top third of paddle (create downward angle)
-        targetPaddlePos = ballCenter - paddleLength + 2;
-      } else if (strategy < 60) {
-        // 30% - Try to hit ball with bottom third of paddle (create upward angle)  
-        targetPaddlePos = ballCenter - 2;
-      } else {
-        // 40% - Center the paddle normally (mix of center and slight angles)
-        targetPaddlePos = ballCenter - (paddleLength / 2);
-        // Add small random variation
-        targetPaddlePos += random(-1, 2);
-      }
-      
+        targetPaddlePos = ballCenter - (paddleLength / 2);   
       // Constrain to valid range
       if (targetPaddlePos < 1) targetPaddlePos = 1;
       if (targetPaddlePos > H - paddleLength - 1) targetPaddlePos = H - paddleLength - 1;
@@ -940,10 +926,17 @@ void updatePlayerAI() {
     // Add speed-based errors - Player AI also gets worse as ball gets faster (adjusted)
     if (speedLevel >= 1) {
       // Player AI has slightly more errors than computer AI
-      int errorChance = speedLevel * 2.5;  // 2.5%, 5%, 7.5% error chance (was 4%, 8%, 12%)
+      // At higher speeds, add tracking errors
+      //int errorChance = speedLevel * 2;  // 2%, 4%, 6% error chance depending on speed
+
+      //fixed error chance regardless of speed
+      int errorChance =  4;  // 4%, error chance
+
       if (random(0, 100) < errorChance) {
         // Add random error to target position
-        int error = random(-3, 4) * speedLevel;  // Slightly bigger errors than computer (was -5 to 6)
+        //int error = random(-2, 3) * speedLevel;  // Smaller errors (was -4 to 5)
+        int error = random(-2, 3);  // disregard speed level
+
         targetPaddlePos += error;
         
         // Keep within bounds
