@@ -57,6 +57,11 @@ byte bufferIndex = 0;
 boolean bufferFilled = false;
 byte lastPaddleAy = 44;  // Track last paddle position for deadzone
 
+// Paddle calibration variables
+int baseMinReading = 815;    // Base minimum reading
+int baseMaxReading = 895;    // Base maximum reading
+int potOffset = 0;           // Offset to shift the range up/down (negative values shift paddle down)
+
 TVout tv;
 
 // Function declarations
@@ -96,6 +101,9 @@ void moveBall();
 void pong();
 
 void setup() {  
+  // Add serial for debug output
+  //Serial.begin(9600);
+  
   // Set up D10 as attract mode switch
   pinMode(GAME_START, INPUT_PULLUP);  // D10 with internal pull-up
   tv.begin(NTSC, W, H);
@@ -394,15 +402,30 @@ void drawPaddles() {
     // In attract mode, use AI for right paddle too (same skill level)
     updatePlayerAI();
   } else {
-    // Human player - Read raw analog value from A3 (your potentiometer with 10K pull-up)
+    // Human player - Read raw analog value from A3 (potentiometer with 10K pull-up)
     int rawValue = analogRead(A3);
     
-    // Your actual measured ADC values with 10K pull-up resistor
-    int minReading = 815;  // Lowered from 820 to capture full top range
-    int maxReading = 895;  // Raised from 890 to capture full bottom range
+    // DEBUG: Print raw A3 value (comment out when not needed)
+    // Serial.print("A3 Raw: ");
+    // Serial.print(rawValue);
+    // Serial.print("\n");
+
+    // Apply offset to shift the effective range
+    int adjustedMin = baseMinReading + potOffset;
+    int adjustedMax = baseMaxReading + potOffset;
     
-    // Constrain the raw value to expected range
-    rawValue = constrain(rawValue, minReading, maxReading);
+    // DEBUG: Print adjusted range (comment out when not needed)
+    // Serial.print(" | Range: ");
+    // Serial.print(adjustedMin);
+    // Serial.print("-");
+    // Serial.print(adjustedMax);
+    
+    // Constrain the raw value to adjusted range
+    rawValue = constrain(rawValue, adjustedMin, adjustedMax);
+    
+    // DEBUG: Print constrained value (comment out when not needed)
+    // Serial.print(" | Constrained: ");
+    // Serial.println(rawValue);
     
     // Add to circular buffer for smoothing
     paddleBuffer[bufferIndex] = rawValue;
@@ -419,8 +442,8 @@ void drawPaddles() {
     }
     int smoothedValue = sum / samplesUsed;
     
-    // Map smoothed value to RIGHT paddle position (human player)
-    byte newPaddleBy = map(smoothedValue, minReading, maxReading, 1, H - paddleLength - 1);
+    // Map smoothed value to RIGHT paddle position (human player) using adjusted range
+    byte newPaddleBy = map(smoothedValue, adjustedMin, adjustedMax, 1, H - paddleLength - 1);
     
     // FINE-TUNING: Add deadzone for human paddle
     if (abs(newPaddleBy - lastPaddleAy) > 0) {  
@@ -428,13 +451,6 @@ void drawPaddles() {
       lastPaddleAy = paddleBy;  // Update tracking variable
     }
   }
-  
-  // Boundary checking
-  // if(paddleAy < 1) paddleAy = 1;
-  // if(paddleAy > H - paddleLength - 1) paddleAy = H - paddleLength - 1;
-  
-  // if(paddleBy < 1) paddleBy = 1;
-  // if(paddleBy > H - paddleLength - 1) paddleBy = H - paddleLength - 1;
   
   drawPaddle(paddleAx, paddleAy);  // Computer paddle (left)
   drawPaddle(paddleBx, paddleBy);  // Human paddle (right)
@@ -869,18 +885,6 @@ void updateComputerPaddle() {
   
   // Convert to integer position
   paddleAy = (byte)(aiPaddleFloat + 0.5);
-  
-  // Final boundary check
-  // if (paddleAy < 1) {
-  //   paddleAy = 1;
-  //   aiPaddleFloat = 1.0;
-  //   aiMomentum = 0.0;
-  // }
-  // if (paddleAy > H - paddleLength - 1) {
-  //   paddleAy = H - paddleLength - 1;
-  //   aiPaddleFloat = H - paddleLength - 1;
-  //   aiMomentum = 0.0;
-  // }
 }
 
 void updatePlayerAI() {
@@ -968,18 +972,6 @@ void updatePlayerAI() {
   
   // Convert to integer position
   paddleBy = (byte)(playerAiFloat + 0.5);
-  
-  // Final boundary check with momentum reset
-  // if (paddleBy < 1) {
-  //   paddleBy = 1;
-  //   playerAiFloat = 1.0;
-  //   playerAiMomentum = 0.0;
-  // }
-  // if (paddleBy > H - paddleLength - 1) {
-  //   paddleBy = H - paddleLength - 1;
-  //   playerAiFloat = H - paddleLength - 1;
-  //   playerAiMomentum = 0.0;
-  // }
 }
 
 boolean ballOverlapsScore(int ballX, int ballY) {
