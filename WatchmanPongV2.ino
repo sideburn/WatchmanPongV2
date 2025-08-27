@@ -12,7 +12,7 @@
 #define H 98
 #define GAME_START 10  // D10 switch for attract mode control
 
-#define MAX_SCORE 9
+#define MAX_SCORE 11
 
 #define BUFFER_SIZE 12  // Increase for more smoothing (8=current, 16=very smooth, 6=more responsive)
 
@@ -69,6 +69,7 @@ boolean ballOverlapsScore(int ballX, int ballY);
 void drawPaddles();
 void drawScore();
 void drawLargeDigit(byte x, byte y, byte digit);
+void drawLargeTwoDigit(byte x, byte y, byte number);
 void drawPaddle(int x, int y);
 void hitSound();
 void bounceSound();
@@ -203,7 +204,7 @@ void moveBall() {
   // detect score - reset rally count on miss
   if (ballx < 0) {
     rallyCount = 0;  // Reset rally counter
-    speedLevel = 1;  // Reset speed level
+    speedLevel = 1;  // Reset speed level to 1
     if (!attractMode) score2++;
     drawScore();
     drawNet();
@@ -222,7 +223,7 @@ void moveBall() {
   }
   if (ballx >= (W + 2)) {
     rallyCount = 0;  // Reset rally counter
-    speedLevel = 1;  // Reset speed level
+    speedLevel = 1;  // Reset speed level to 1
     if (!attractMode) score++;
     drawNet();
     drawScore();
@@ -365,19 +366,10 @@ void moveBall() {
   if (paddleHit) {
     rallyCount++;
     
-    // Increase speed level based on rally count
-    // if (rallyCount >= 2 && speedLevel == 0) {
-    //   speedLevel = 1;  // 25% faster after 4 hits
-    // } else if (rallyCount >= 8 && speedLevel == 1) {
-    //   speedLevel = 2;  // 50% faster after 8 hits
-    // } else if (rallyCount >= 12 && speedLevel == 2) {
-    //   speedLevel = 3;  // 75% faster after 12 hits
-    // }
-
     if (rallyCount >= 3 && speedLevel == 1) {
-      speedLevel = 2;  // 50% faster after 8 hits
+      speedLevel = 2;  // Second speed increase after 3 hits
     } else if (rallyCount >= 6 && speedLevel == 2) {
-      speedLevel = 3;  // 75% faster after 12 hits
+      speedLevel = 3;  // Third speed increase after 6 hits
     }
   }
 
@@ -438,30 +430,39 @@ void drawPaddles() {
   }
   
   // Boundary checking
-  if(paddleAy < 1) paddleAy = 1;
-  if(paddleAy > H - paddleLength - 1) paddleAy = H - paddleLength - 1;
+  // if(paddleAy < 1) paddleAy = 1;
+  // if(paddleAy > H - paddleLength - 1) paddleAy = H - paddleLength - 1;
   
-  if(paddleBy < 1) paddleBy = 1;
-  if(paddleBy > H - paddleLength - 1) paddleBy = H - paddleLength - 1;
+  // if(paddleBy < 1) paddleBy = 1;
+  // if(paddleBy > H - paddleLength - 1) paddleBy = H - paddleLength - 1;
   
   drawPaddle(paddleAx, paddleAy);  // Computer paddle (left)
   drawPaddle(paddleBx, paddleBy);  // Human paddle (right)
 }
 
 void drawScore() {
-  // Clear score areas
+  // Clear score areas - make them wider for two-digit numbers
   for (byte y = 0; y < 15; y++) {
-    for (byte x = 20; x <= 35; x++) {
+    for (byte x = 15; x <= 40; x++) {  // Expanded left area
       tv.set_pixel(x, y, 0);
     }
-    for (byte x = 100; x <= 115; x++) {
+    for (byte x = 95; x <= 120; x++) {  // Expanded right area  
       tv.set_pixel(x, y, 0);
     }
   }
   
   // Draw large digits manually
-  drawLargeDigit(25, 2, score);   // Computer score (left)
-  drawLargeDigit(105, 2, score2); // Player score (right)
+  if (score >= 10) {
+    drawLargeTwoDigit(20, 2, score);   // Computer score (left) - two digits
+  } else {
+    drawLargeDigit(25, 2, score);      // Computer score (left) - single digit, centered
+  }
+  
+  if (score2 >= 10) {
+    drawLargeTwoDigit(100, 2, score2); // Player score (right) - two digits  
+  } else {
+    drawLargeDigit(105, 2, score2);    // Player score (right) - single digit, centered
+  }
 }
 
 void drawLargeDigit(byte x, byte y, byte digit) {
@@ -539,6 +540,17 @@ void drawLargeDigit(byte x, byte y, byte digit) {
       tv.draw_line(x+1, y+10, x+5, y+10, 1); // bottom
       break;
   }
+}
+
+void drawLargeTwoDigit(byte x, byte y, byte number) {
+  // Draw two-digit numbers (10, 11, etc.)
+  byte tensDigit = number / 10;
+  byte onesDigit = number % 10;
+  
+  // Draw tens digit (smaller spacing for two digits)
+  drawLargeDigit(x, y, tensDigit);
+  // Draw ones digit (8 pixels to the right)
+  drawLargeDigit(x + 8, y, onesDigit);
 }
 
 void drawPaddle(int x, int y) {
@@ -767,7 +779,7 @@ void initPong() {
   score = 0;
   score2 = 0;
   rallyCount = 0;    // Reset rally counter
-  speedLevel = 1;    // Reset speed level
+  speedLevel = 1;    // Reset speed level to 1
   frameSkip = 0;     // Reset frame skip counter
   drawScore();
   tv.set_pixel(ballx, bally, 1);
@@ -788,45 +800,24 @@ void updateComputerPaddle() {
     // Smart targeting: position paddle so ball hits WITHIN the paddle area
     byte targetPaddlePos;
     
-    if (ballCenter <= 8) {
-      // Ball is very high - position paddle at top to catch it
+    if (ballCenter <= 6) {
+      // Ball is very high - position paddle at top to catch it (improved range)
       targetPaddlePos = 1;
-    } else if (ballCenter >= (H - 8)) {
-      // Ball is very low - position paddle at bottom to catch it  
+    } else if (ballCenter >= (H - 6)) {
+      // Ball is very low - position paddle at bottom to catch it (improved range)
       targetPaddlePos = H - paddleLength - 1;
     } else {
-        targetPaddlePos = ballCenter - (paddleLength / 2);   
-      // Constrain to valid range
-      if (targetPaddlePos < 1) targetPaddlePos = 1;
-      if (targetPaddlePos > H - paddleLength - 1) targetPaddlePos = H - paddleLength - 1;
-    }
-    
-    // BOUNDARY FIX: If paddle will be at boundary, offset targeting to avoid center hits
-    if (targetPaddlePos <= 1 || targetPaddlePos >= H - paddleLength - 1) {
-      targetPaddlePos += random(-3, 4);  // Add random offset when at boundary
-      // Re-constrain after adding offset
-      if (targetPaddlePos < 1) targetPaddlePos = 1;
-      if (targetPaddlePos > H - paddleLength - 1) targetPaddlePos = H - paddleLength - 1;
-    }
-    
-    // Add speed-based errors
-    if (speedLevel >= 1) { //must be at least speed level 1
-
-      // At higher speeds, add tracking errors
-      //int errorChance = speedLevel * 2;  // 2%, 4%, 6% error chance depending on speed
+      // Ball is in middle area
+         //targetPaddlePos = ballCenter - (paddleLength / 2);
+      // // Choose different targeting strategies  
+      int strategy = random(0, 100);
       
-      //fixed error chance regardless of speed
-      int errorChance =  4;  // 4%, error chance
-
-      if (random(0, 100) < errorChance) {
-        // Add random error to target position
-        //int error = random(-2, 3) * speedLevel;  // Smaller errors (was -4 to 5)
-        int error = random(-2, 3);  // disregard speed level
-        targetPaddlePos += error;
-        
-        // Keep within bounds
-        if (targetPaddlePos < 1) targetPaddlePos = 1;
-        if (targetPaddlePos > H - paddleLength - 1) targetPaddlePos = H - paddleLength - 1;
+      if (strategy < 10) {
+        // Try to hit ball with top third of paddle (create downward angle)
+        targetPaddlePos = ballCenter - paddleLength + 2;
+      } else {
+        //  Center the paddle normally
+        targetPaddlePos = ballCenter - (paddleLength / 2);
       }
     }
     
@@ -834,14 +825,16 @@ void updateComputerPaddle() {
     
     // Calculate desired movement
     float targetDistance = aiPaddleTarget - aiPaddleFloat;
+
+    // add random speed degradation based on ball speed
+    float currentMaxSpeed = maxAiSpeed;  // init to full speed
     
-    // Reduce AI speed at higher ball speeds (reaction time degrades) - less harsh
-    float currentMaxSpeed = maxAiSpeed;
-    if (speedLevel >= 2) {
-      currentMaxSpeed = maxAiSpeed * 0.9;  // 10% slower at speed level 2 (was 20%)
-    }
-    if (speedLevel >= 3) {
-      currentMaxSpeed = maxAiSpeed * 0.8;  // 20% slower at speed level 3 (was 40%)
+    // slow the movement down to cause occasional misses
+    int errorChance = random(0, 100);
+    if (errorChance < 60) { //60% chance we slow him down
+      if (speedLevel >= 3) {
+        currentMaxSpeed = maxAiSpeed * 0.70;  // 30% slower at speed level 3
+      }
     }
     
     // Limit movement speed
@@ -878,16 +871,16 @@ void updateComputerPaddle() {
   paddleAy = (byte)(aiPaddleFloat + 0.5);
   
   // Final boundary check
-  if (paddleAy < 1) {
-    paddleAy = 1;
-    aiPaddleFloat = 1.0;
-    aiMomentum = 0.0;
-  }
-  if (paddleAy > H - paddleLength - 1) {
-    paddleAy = H - paddleLength - 1;
-    aiPaddleFloat = H - paddleLength - 1;
-    aiMomentum = 0.0;
-  }
+  // if (paddleAy < 1) {
+  //   paddleAy = 1;
+  //   aiPaddleFloat = 1.0;
+  //   aiMomentum = 0.0;
+  // }
+  // if (paddleAy > H - paddleLength - 1) {
+  //   paddleAy = H - paddleLength - 1;
+  //   aiPaddleFloat = H - paddleLength - 1;
+  //   aiMomentum = 0.0;
+  // }
 }
 
 void updatePlayerAI() {
@@ -901,16 +894,16 @@ void updatePlayerAI() {
     // Same targeting logic as computer AI
     byte targetPaddlePos;
     
-    if (ballCenter <= 8) {
-      // Ball is very high - position paddle at top to catch it
+    if (ballCenter <= 6) {
+      // Ball is very high - position paddle at top to catch it (improved range)
       targetPaddlePos = 1;
-    } else if (ballCenter >= (H - 8)) {
-      // Ball is very low - position paddle at bottom to catch it  
+    } else if (ballCenter >= (H - 6)) {
+      // Ball is very low - position paddle at bottom to catch it (improved range)  
       targetPaddlePos = H - paddleLength - 1;
     } else {
-      // Ball is in middle area - vary targeting strategy (slightly different from computer)
+      // Ball is in middle area - vary targeting strategy
       
-      // Choose different targeting strategies  
+      // // Choose different targeting strategies  
       int strategy = random(0, 100);
       
       if (strategy < 35) {
@@ -925,57 +918,24 @@ void updatePlayerAI() {
         // Add small random variation
         targetPaddlePos += random(-1, 2);
       }
-      
-      // Constrain to valid range
-      if (targetPaddlePos < 1) targetPaddlePos = 1;
-      if (targetPaddlePos > H - paddleLength - 1) targetPaddlePos = H - paddleLength - 1;
     }
-    
-    // BOUNDARY FIX: If paddle will be at boundary, offset targeting to avoid center hits
-    if (targetPaddlePos <= 1 || targetPaddlePos >= H - paddleLength - 1) {
-      targetPaddlePos += random(-3, 4);  // Add random offset when at boundary
-      // Re-constrain after adding offset
-      if (targetPaddlePos < 1) targetPaddlePos = 1;
-      if (targetPaddlePos > H - paddleLength - 1) targetPaddlePos = H - paddleLength - 1;
-    }
-    
-    // Add speed-based errors - Player AI also gets worse as ball gets faster (adjusted)
-    if (speedLevel >= 1) {
-      // Player AI has slightly more errors than computer AI
-      // At higher speeds, add tracking errors
-      //int errorChance = speedLevel * 2;  // 2%, 4%, 6% error chance depending on speed
-
-      //fixed error chance regardless of speed
-      int errorChance =  4;  // 4%, error chance
-
-      if (random(0, 100) < errorChance) {
-        // Add random error to target position
-        //int error = random(-2, 3) * speedLevel;  // Smaller errors (was -4 to 5)
-        int error = random(-2, 3);  // disregard speed level
-
-        targetPaddlePos += error;
-        
-        // Keep within bounds
-        if (targetPaddlePos < 1) targetPaddlePos = 1;
-        if (targetPaddlePos > H - paddleLength - 1) targetPaddlePos = H - paddleLength - 1;
-      }
-    }
-    
+  
     playerAiTarget = targetPaddlePos;
     
     // Calculate desired movement
     float targetDistance = playerAiTarget - playerAiFloat;
     
-    // Player AI is slightly slower than computer AI and degrades more gradually
-    float currentMaxSpeed = maxAiSpeed * 0.95;  // Start 5% slower than computer (was 10%)
-    if (speedLevel >= 2) {
-      currentMaxSpeed = maxAiSpeed * 0.85;  // 15% slower at speed level 2 (was 30%)
-    }
-    if (speedLevel >= 3) {
-      currentMaxSpeed = maxAiSpeed * 0.75;  // 25% slower at speed level 3 (was 50%)
-    }
+    // add random speed degradation based on ball speed
+    float currentMaxSpeed = maxAiSpeed;  // init to full speed
     
-    // Limit movement speed
+    // slow the movement down to cause occasional misses
+    int errorChance = random(0, 100);
+    if (errorChance < 60) { //60% chance we slow him down
+      if (speedLevel >= 3) {
+        currentMaxSpeed = maxAiSpeed * 0.70;  // 30% slower at speed level 3
+      }
+    }
+
     if (targetDistance > currentMaxSpeed) {
       targetDistance = currentMaxSpeed;
     } else if (targetDistance < -currentMaxSpeed) {
@@ -1010,16 +970,16 @@ void updatePlayerAI() {
   paddleBy = (byte)(playerAiFloat + 0.5);
   
   // Final boundary check with momentum reset
-  if (paddleBy < 1) {
-    paddleBy = 1;
-    playerAiFloat = 1.0;
-    playerAiMomentum = 0.0;
-  }
-  if (paddleBy > H - paddleLength - 1) {
-    paddleBy = H - paddleLength - 1;
-    playerAiFloat = H - paddleLength - 1;
-    playerAiMomentum = 0.0;
-  }
+  // if (paddleBy < 1) {
+  //   paddleBy = 1;
+  //   playerAiFloat = 1.0;
+  //   playerAiMomentum = 0.0;
+  // }
+  // if (paddleBy > H - paddleLength - 1) {
+  //   paddleBy = H - paddleLength - 1;
+  //   playerAiFloat = H - paddleLength - 1;
+  //   playerAiMomentum = 0.0;
+  // }
 }
 
 boolean ballOverlapsScore(int ballX, int ballY) {
