@@ -14,7 +14,7 @@
 
 #define MAX_SCORE 11
 
-#define BUFFER_SIZE 12  // Increase for more smoothing (8=current, 16=very smooth, 6=more responsive)
+#define BUFFER_SIZE 8  // Increase for more paddle smoothing (8=current, 16=very smooth, 6=more responsive)
 
 // Pong variables
 int ballx, bally;
@@ -614,7 +614,7 @@ void drawIntroScreen() {
   tv.fill(0);
 
   // Adjust positions to center text
-  byte startX = 30; 
+  byte startX = 35; 
   byte lineSpacing = 18;  
 
   // Draw "SIDE"
@@ -708,9 +708,9 @@ void drawLargeG(byte x, byte y) {
 
 void drawLargeGameOver() {
   // Positioning variables - adjust these to center the text
-  byte gameX = 30;    // X position for "GAME" 
+  byte gameX = 35;    // X position for "GAME" 
   byte gameY = 35;    // Y position for "GAME"
-  byte overX = 30;    // X position for "OVER"
+  byte overX = 35;    // X position for "OVER"
   byte overY = 55;    // Y position for "OVER"
   byte letterSpacing = 20;  // Space between letters
   
