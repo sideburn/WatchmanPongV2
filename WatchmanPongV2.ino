@@ -816,7 +816,14 @@ void updateComputerPaddle() {
     // Smart targeting: position paddle so ball hits WITHIN the paddle area
     byte targetPaddlePos;
     
-    if (ballCenter <= 6) {
+    // ANTI-INFINITE-RALLY: Check if paddle is at extreme position and force angled hits
+    if (paddleAy <= 3) {
+      // Paddle at top - can only move down, target lower to hit with bottom of paddle
+      targetPaddlePos = min(20, ballCenter - 2);  // Force downward trajectory
+    } else if (paddleAy >= (H - paddleLength - 3)) {
+      // Paddle at bottom - can only move up, target higher to hit with top of paddle
+      targetPaddlePos = max(H - paddleLength - 20, ballCenter - paddleLength + 2);  // Force upward trajectory
+    } else if (ballCenter <= 6) {
       // Ball is very high - position paddle at top to catch it (improved range)
       targetPaddlePos = 1;
     } else if (ballCenter >= (H - 6)) {
@@ -898,7 +905,14 @@ void updatePlayerAI() {
     // Same targeting logic as computer AI
     byte targetPaddlePos;
     
-    if (ballCenter <= 6) {
+    // ANTI-INFINITE-RALLY: Check if paddle is at extreme position and force angled hits
+    if (paddleBy <= 3) {
+      // Paddle at top - can only move down, target lower to hit with bottom of paddle
+      targetPaddlePos = min(20, ballCenter - 2);  // Force downward trajectory
+    } else if (paddleBy >= (H - paddleLength - 3)) {
+      // Paddle at bottom - can only move up, target higher to hit with top of paddle  
+      targetPaddlePos = max(H - paddleLength - 20, ballCenter - paddleLength + 2);  // Force upward trajectory
+    } else if (ballCenter <= 6) {
       // Ball is very high - position paddle at top to catch it (improved range)
       targetPaddlePos = 1;
     } else if (ballCenter >= (H - 6)) {
