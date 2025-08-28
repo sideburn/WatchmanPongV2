@@ -18,9 +18,10 @@
 #define H 98
 #define MODE_SWITCH 10            //  D10 switch for start / stop (attract mode)
 
-#define MAX_SCORE 11
+#define MAX_SCORE 11              // Max score to be reached
 #define FAULT_PERCENT 65          // Ai difficulty level, higher numbers are easier
-#define PADDLE_SMOOTHING 8       // Increase for more paddle smoothing (8=current, 16=very smooth, 6=more responsive)
+#define PADDLE_SMOOTHING 8        // Increase for more paddle smoothing (8=current, 16=very smooth, 6=more responsive)
+#define PADDLE_SENSITIVITY 4      // Adjusts touchyness of the paddle input from the tuner POT
 
 // Pong variables
 int ballx, bally;
@@ -490,7 +491,7 @@ void drawPaddles() {
     byte newPaddleBy = map(smoothedValue, adjustedMin, adjustedMax, 1, H - paddleLength - 1);
     
     // FINE-TUNING: Add deadzone for human paddle
-    if (abs(newPaddleBy - lastPaddleAy) > 0) {  
+    if (abs(newPaddleBy - lastPaddleAy) > PADDLE_SENSITIVITY) {  
       paddleBy = newPaddleBy;
       lastPaddleAy = paddleBy;  // Update tracking variable
     }
