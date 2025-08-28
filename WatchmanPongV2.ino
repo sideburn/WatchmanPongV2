@@ -4,6 +4,7 @@
   - adjustable difficulty
   - adjustable max score
   - adjustable paddle smoothing
+  - adjustable paddle sensitivity
   - auto attract mode on game end
 
   © Sideburn Studios - August 2025
@@ -79,7 +80,6 @@ void initPong();
 void initAttractScreen();
 void updateComputerPaddle();
 void updatePlayerAI();
-boolean ballOverlapsScore(int ballX, int ballY);
 void drawPaddles();
 void drawScore();
 void drawLargeDigit(byte x, byte y, byte digit);
@@ -148,12 +148,10 @@ void loop() {
   if (currentSwitch != lastSwitchState) {
     if (currentSwitch) {
       // switched into attract mode → start fresh attract game
-      //attractMode = true;
       tv.delay(3000);
       initPong();
     } else {
       // switched out of attract → start fresh real game
-      //attractMode = false;
     }
   }
   lastSwitchState = currentSwitch;
@@ -182,7 +180,6 @@ void pong() {
   //attractMode = true;  // Always in attract mode for testing
   //gameEnded = false;   // Never end game during testing
 
-  
   drawNet();
   drawPaddles();
 
@@ -254,7 +251,7 @@ void pong() {
 }
 
 void moveBall() {
-  // detect score - reset rally count on miss
+  // Detect score - reset rally count on miss
   if (ballx < 0) {
     rallyCount = 0;  // Reset rally counter
     speedLevel = 1;  // Reset speed level to 1
@@ -301,7 +298,7 @@ void moveBall() {
   // Smooth speed increases - no random jerky movements
   if (speedLevel == 1) {
     // 25% faster - move 1.25 pixels on average
-    // Implement as: move 1 pixel normally, +1 pixel every 4th frame
+    // move 1 pixel normally, +1 pixel every 4th frame
     static byte frameCounter1 = 0;
     frameCounter1++;
     if (frameCounter1 >= 4) {
@@ -311,7 +308,7 @@ void moveBall() {
     }
   } else if (speedLevel == 2) {
     // 50% faster - move 1.5 pixels on average  
-    // Implement as: move 1 pixel normally, +1 pixel every 2nd frame
+    // move 1 pixel normally, +1 pixel every 2nd frame
     static byte frameCounter2 = 0;
     frameCounter2++;
     if (frameCounter2 >= 2) {
@@ -321,7 +318,7 @@ void moveBall() {
     }
   } else if (speedLevel == 3) {
     // 75% faster - move 1.75 pixels on average
-    // Implement as: move 2 pixels normally, +1 pixel every 4th frame
+    // move 2 pixels normally, +1 pixel every 4th frame
     moveX = dx * 2;
     moveY = dy * 2;
     static byte frameCounter3 = 0;
@@ -333,7 +330,7 @@ void moveBall() {
     }
   }
 
-  // Apply the calculated movement
+  // Apply calculated movement
   ballx = ballx + moveX;
   bally = bally + moveY;
 
@@ -472,6 +469,7 @@ void drawPaddles() {
     // Serial.print(" | Constrained: ");
     // Serial.println(rawValue);
     
+    // Paddle smoothing
     // Add to circular buffer for smoothing
     paddleBuffer[bufferIndex] = rawValue;
     bufferIndex = (bufferIndex + 1) % PADDLE_SMOOTHING;
@@ -490,10 +488,11 @@ void drawPaddles() {
     // Map smoothed value to RIGHT paddle position (human player) using adjusted range
     byte newPaddleBy = map(smoothedValue, adjustedMin, adjustedMax, 1, H - paddleLength - 1);
     
-    // FINE-TUNING: Add deadzone for human paddle
+    // Paddle sensitivity
+    // deadzone for human paddle to prevent jittering from POT value
     if (abs(newPaddleBy - lastPaddleAy) > PADDLE_SENSITIVITY) {  
       paddleBy = newPaddleBy;
-      lastPaddleAy = paddleBy;  // Update tracking variable
+      lastPaddleAy = paddleBy;  // Update tracking
     }
   }
   
@@ -504,10 +503,10 @@ void drawPaddles() {
 void drawScore() {
   // Clear score areas - make them wider for two-digit numbers
   for (byte y = 0; y < 15; y++) {
-    for (byte x = 15; x <= 40; x++) {  // Expanded left area
+    for (byte x = 15; x <= 40; x++) {  // left area
       tv.set_pixel(x, y, 0);
     }
-    for (byte x = 95; x <= 120; x++) {  // Expanded right area  
+    for (byte x = 95; x <= 120; x++) {  // right area  
       tv.set_pixel(x, y, 0);
     }
   }
@@ -527,7 +526,7 @@ void drawScore() {
 }
 
 void drawLargeDigit(byte x, byte y, byte digit) {
-  // Draw large 7x11 pixel digits
+  // Draw large pixel digits
   switch(digit) {
     case 0:
       // Draw 0
@@ -610,7 +609,7 @@ void drawLargeTwoDigit(byte x, byte y, byte number) {
   
   // Draw tens digit (smaller spacing for two digits)
   drawLargeDigit(x, y, tensDigit);
-  // Draw ones digit (8 pixels to the right)
+  // Draw ones digit (x+ pixels to the right)
   drawLargeDigit(x + 10, y, onesDigit);
 }
 
@@ -876,8 +875,7 @@ void updateComputerPaddle() {
       targetPaddlePos = H - paddleLength - 1;
     } else {
       // Ball is in middle area
-         //targetPaddlePos = ballCenter - (paddleLength / 2);
-      // // Choose different targeting strategies  
+      // Choose different targeting strategies  
       int strategy = random(0, 100);
       
       if (strategy < 10) {
@@ -1031,41 +1029,4 @@ void updatePlayerAI() {
   
   // Convert to integer position
   paddleBy = (byte)(playerAiFloat + 0.5);
-}
-
-boolean ballPathOverlapsScore(int oldX, int oldY, int newX, int newY) {
-  // Check all positions along the ball's path for score overlaps
-  int deltaX = newX - oldX;
-  int deltaY = newY - oldY;
-  int steps = max(abs(deltaX), abs(deltaY));
-  
-  if (steps == 0) {
-    return ballOverlapsScore(newX, newY);
-  }
-  
-  for (int step = 0; step <= steps; step++) {
-    int checkX = oldX + (deltaX * step) / steps;
-    int checkY = oldY + (deltaY * step) / steps;
-    
-    if (ballOverlapsScore(checkX, checkY)) {
-      return true;
-    }
-  }
-  
-  return false;
-}
-
-boolean ballOverlapsScore(int ballX, int ballY) {
-  // Simplified test - only avoid the ball in a small area around where digits actually are
-  for (int x = ballX; x <= ballX + 1; x++) {
-    for (int y = ballY; y <= ballY + 1; y++) {
-      // Very tight bounds just around single digits for testing
-      if (y >= 2 && y <= 12) {
-        if ((x >= 25 && x <= 32) || (x >= 105 && x <= 112)) {
-          return true;  // Only avoid ball in very small digit areas
-        }
-      }
-    }
-  }
-  return false;
 }
