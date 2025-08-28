@@ -1,7 +1,13 @@
-/*
+/**************************************
   Pong game for Sony Watchman
-  Sideburn Studios - August 2025
-*/
+
+  - adjustable difficulty
+  - adjustable max score
+  - adjustable paddle smoothing
+  - auto attract mode on game end
+
+  © Sideburn Studios - August 2025
+***************************************/
 
 #include <avr/pgmspace.h>
 #include <TVout.h>
@@ -10,57 +16,57 @@
 
 #define W 135
 #define H 98
-#define GAME_START 10  // D10 switch for attract mode control
+#define MODE_SWITCH 10            //  D10 switch for start / stop (attract mode)
 
 #define MAX_SCORE 11
-
-#define BUFFER_SIZE 8  // Increase for more paddle smoothing (8=current, 16=very smooth, 6=more responsive)
+#define FAULT_PERCENT 65          // Ai difficulty level, higher numbers are easier
+#define PADDLE_SMOOTHING 16       // Increase for more paddle smoothing (8=current, 16=very smooth, 6=more responsive)
 
 // Pong variables
 int ballx, bally;
 char dx;
 char dy;
-boolean ballServing = false;  // Track if ball is waiting to serve
-byte paddleAy = 44;           // Computer paddle (left side)
-byte paddleBy = 44;           // Human paddle (right side)
-byte paddleAx = 2;            // Computer paddle X position
-byte paddleBx = W - 10;       // Human paddle X position
+boolean ballServing = false;      // Track if ball is waiting to serve
+byte paddleAy = 44;               // Computer paddle (left side)
+byte paddleBy = 44;               // Human paddle (right side)
+byte paddleAx = 2;                // Computer paddle X position
+byte paddleBx = W - 10;           // Human paddle X position
 byte paddleWidth = 2;
 byte paddleLength = 12;
-byte score = 0;               // Computer score (left)
-byte score2 = 0;              // Player score (right)
-boolean attractMode = false;  // Track if in attract mode
-boolean gameEnded = false;
-boolean lastSwitchState = HIGH;  // assume HIGH = attract off at startup
+byte score = 0;                   // Computer score (left)
+byte score2 = 0;                  // Player score (right)
+boolean attractMode = false;      // Track if in attract mode
+boolean gameEnded = true;         // Startup default. false = game starts on power up (if the switch is set to start). True = always boots in attract mode.
+boolean lastSwitchState = HIGH;   // assume HIGH = attract off at startup
 
 // Rally speed system variables
-byte rallyCount = 0;        // Track consecutive hits without a miss
-byte speedLevel = 0;        // Current speed level (0-3)
-byte frameSkip = 0;         // Frame counter for speed control
-byte maxSpeedLevel = 3;     // Maximum speed level
+byte rallyCount = 0;              // Track consecutive hits without a miss
+byte speedLevel = 0;              // Current speed level (0-3)
+byte frameSkip = 0;               // Frame counter for speed control
+byte maxSpeedLevel = 3;           // Maximum speed level
 
 // Computer AI variables
-float aiPaddleTarget = 44.0;  // Target position for smooth AI movement
-float aiPaddleFloat = 44.0;   // Floating point position for smooth movement
-float maxAiSpeed = 2.5;       // Maximum pixels per frame the AI can move
-float aiMomentum = 0.0;       // Track movement momentum to prevent oscillation
+float aiPaddleTarget = 44.0;      // Target position for smooth AI movement
+float aiPaddleFloat = 44.0;       // Floating point position for smooth movement
+float maxAiSpeed = 2.5;           // Maximum pixels per frame the AI can move
+float aiMomentum = 0.0;           // Track movement momentum to prevent oscillation
 
 // Player AI variables (for attract mode)
-float playerAiTarget = 44.0;  // Target position for player AI
-float playerAiFloat = 44.0;   // Floating point position for player AI
-float playerMaxSpeed = 0.9;   // Slower than computer AI
-float playerAiMomentum = 0.0; // Player AI momentum
+float playerAiTarget = 44.0;      // Target position for player AI
+float playerAiFloat = 44.0;       // Floating point position for player AI
+float playerMaxSpeed = 0.9;       // Slower than computer AI
+float playerAiMomentum = 0.0;     // Player AI momentum
 
-// Paddle smoothing variables - ADJUST THESE FOR FINE TUNING
-int paddleBuffer[BUFFER_SIZE];
+// Paddle smoothing variables
+int paddleBuffer[PADDLE_SMOOTHING];
 byte bufferIndex = 0;
 boolean bufferFilled = false;
-byte lastPaddleAy = 44;  // Track last paddle position for deadzone
+byte lastPaddleAy = 44;           // Last paddle position for deadzone
 
 // Paddle calibration variables
-int baseMinReading = 815;    // Base minimum reading
-int baseMaxReading = 895;    // Base maximum reading
-int potOffset = 0;           // Offset to shift the range up/down (negative values shift paddle down)
+int baseMinReading = 840;         // Base minimum paddle POS reading
+int baseMaxReading = 870;         // Base maximum paddle POS reading
+int potOffset = 35;               // Offset to shift the range up/down (negative values shift paddle down)
 
 TVout tv;
 
@@ -105,7 +111,7 @@ void setup() {
   //Serial.begin(9600);
   
   // Set up D10 as attract mode switch
-  pinMode(GAME_START, INPUT_PULLUP);  // D10 with internal pull-up
+  pinMode(MODE_SWITCH, INPUT_PULLUP);  // D10 with internal pull-up
   tv.begin(NTSC, W, H);
 
   randomSeed(analogRead(0));
@@ -122,8 +128,8 @@ void setup() {
   tv.delay(160);
   
   // Initialize paddle smoothing buffer
-  for(int i = 0; i < BUFFER_SIZE; i++) {
-    paddleBuffer[i] = 855; // Initialize to center value (between 815-895)
+  for(int i = 0; i < PADDLE_SMOOTHING; i++) {
+  paddleBuffer[i] = (baseMinReading + baseMaxReading) / 2; // Initialize to center value
   }
 
   // Show intro splash screen
@@ -133,7 +139,7 @@ void setup() {
 }
 
 void loop() {
-  bool currentSwitch = (digitalRead(GAME_START) == LOW);
+  bool currentSwitch = (digitalRead(MODE_SWITCH) == LOW);
  // --- detect switch change ---
  // --- restart game switching --
   if (currentSwitch != lastSwitchState) {
@@ -159,7 +165,7 @@ void playTone(unsigned int frequency, unsigned long duration_ms) {
 void pong() {
 
     // Check attract mode switch (D10)
-  attractMode = (digitalRead(GAME_START) == HIGH);  // Switch open = attract mode
+  attractMode = (digitalRead(MODE_SWITCH) == HIGH);  // Switch open = attract mode
   if(attractMode){
     gameEnded = false;
   } 
@@ -429,14 +435,14 @@ void drawPaddles() {
     
     // Add to circular buffer for smoothing
     paddleBuffer[bufferIndex] = rawValue;
-    bufferIndex = (bufferIndex + 1) % BUFFER_SIZE;
+    bufferIndex = (bufferIndex + 1) % PADDLE_SMOOTHING;
     if (!bufferFilled && bufferIndex == 0) {
       bufferFilled = true;
     }
     
     // Calculate moving average
     long sum = 0;
-    int samplesUsed = bufferFilled ? BUFFER_SIZE : bufferIndex;
+    int samplesUsed = bufferFilled ? PADDLE_SMOOTHING : bufferIndex;
     for(int i = 0; i < samplesUsed; i++) {
       sum += paddleBuffer[i];
     }
@@ -494,8 +500,8 @@ void drawLargeDigit(byte x, byte y, byte digit) {
     case 1:
       // Draw 1
       tv.draw_line(x+3, y, x+3, y+10, 1);    // vertical line
-      tv.draw_line(x+2, y+1, x+3, y, 1);     // top angle
-      tv.draw_line(x+1, y+10, x+5, y+10, 1); // bottom
+      //tv.draw_line(x+2, y+1, x+3, y, 1);     // top angle
+      //tv.draw_line(x+1, y+10, x+5, y+10, 1); // bottom
       break;
     case 2:
       // Draw 2
@@ -509,7 +515,7 @@ void drawLargeDigit(byte x, byte y, byte digit) {
       // Draw 3
       tv.draw_line(x+1, y, x+5, y, 1);       // top
       tv.draw_line(x+6, y+1, x+6, y+9, 1);   // right
-      tv.draw_line(x+1, y+5, x+3, y+5, 1);   // middle
+      tv.draw_line(x+1, y+5, x+5, y+5, 1);   // middle
       tv.draw_line(x+1, y+10, x+5, y+10, 1); // bottom
       break;
     case 4:
@@ -544,7 +550,7 @@ void drawLargeDigit(byte x, byte y, byte digit) {
       tv.draw_line(x+1, y, x+5, y, 1);       // top
       tv.draw_line(x, y+1, x, y+9, 1);       // left
       tv.draw_line(x+6, y+1, x+6, y+9, 1);   // right
-      tv.draw_line(x+1, y+5, x+3, y+5, 1);   // middle
+      tv.draw_line(x+1, y+5, x+5, y+5, 1);   // middle
       tv.draw_line(x+1, y+10, x+5, y+10, 1); // bottom
       break;
     case 9:
@@ -552,7 +558,7 @@ void drawLargeDigit(byte x, byte y, byte digit) {
       tv.draw_line(x+1, y, x+5, y, 1);       // top
       tv.draw_line(x, y+1, x, y+4, 1);       // top left
       tv.draw_line(x+6, y+1, x+6, y+9, 1);   // right
-      tv.draw_line(x+1, y+5, x+3, y+5, 1);   // middle
+      tv.draw_line(x+1, y+5, x+5, y+5, 1);   // middle
       tv.draw_line(x+1, y+10, x+5, y+10, 1); // bottom
       break;
   }
@@ -566,7 +572,7 @@ void drawLargeTwoDigit(byte x, byte y, byte number) {
   // Draw tens digit (smaller spacing for two digits)
   drawLargeDigit(x, y, tensDigit);
   // Draw ones digit (8 pixels to the right)
-  drawLargeDigit(x + 8, y, onesDigit);
+  drawLargeDigit(x + 10, y, onesDigit);
 }
 
 void drawPaddle(int x, int y) {
@@ -614,7 +620,7 @@ void drawIntroScreen() {
   tv.fill(0);
 
   // Adjust positions to center text
-  byte startX = 35; 
+  byte startX = 32; 
   byte lineSpacing = 18;  
 
   // Draw "SIDE"
@@ -748,7 +754,7 @@ void drawLargeM(byte x, byte y) {
   tv.draw_line(x, y, x, y+11, 1);         // left side
   tv.draw_line(x+8, y, x+8, y+11, 1);     // right side
   tv.draw_line(x, y, x+4, y+4, 1);        // left diagonal
-  tv.draw_line(x+5, y, x+4, y+4, 1);      // right diagonal
+  tv.draw_line(x+7, y, x+4, y+4, 1);      // right diagonal
 }
 
 void drawLargeE(byte x, byte y) {
@@ -854,7 +860,7 @@ void updateComputerPaddle() {
     
     // slow the movement down to cause occasional misses
     int errorChance = random(0, 100);
-    if (errorChance < 60) { //60% chance we slow him down
+    if (errorChance < FAULT_PERCENT) { //% chance we slow him down
       if (speedLevel >= 3) {
         currentMaxSpeed = maxAiSpeed * 0.70;  // 30% slower at speed level 3
       }
