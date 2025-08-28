@@ -20,7 +20,7 @@
 
 #define MAX_SCORE 11
 #define FAULT_PERCENT 65          // Ai difficulty level, higher numbers are easier
-#define PADDLE_SMOOTHING 16       // Increase for more paddle smoothing (8=current, 16=very smooth, 6=more responsive)
+#define PADDLE_SMOOTHING 8       // Increase for more paddle smoothing (8=current, 16=very smooth, 6=more responsive)
 
 // Pong variables
 int ballx, bally;
@@ -36,8 +36,10 @@ byte paddleLength = 12;
 byte score = 0;                   // Computer score (left)
 byte score2 = 0;                  // Player score (right)
 boolean attractMode = false;      // Track if in attract mode
-boolean gameEnded = true;         // Startup default. false = game starts on power up (if the switch is set to start). True = always boots in attract mode.
-boolean lastSwitchState = HIGH;   // assume HIGH = attract off at startup
+boolean gameEnded = true;         // Startup default.
+                                  // False = game starts on power up (if the switch is set to start). 
+                                  // True = always boots in attract mode.
+boolean lastSwitchState = HIGH;   // Assume HIGH = attract off at startup
 
 // Rally speed system variables
 byte rallyCount = 0;              // Track consecutive hits without a miss
@@ -134,7 +136,7 @@ void setup() {
 
   // Show intro splash screen
   drawIntroScreen();
-  
+
   initPong();
 }
 
@@ -163,9 +165,9 @@ void playTone(unsigned int frequency, unsigned long duration_ms) {
 }
 
 void pong() {
-
-    // Check attract mode switch (D10)
-  attractMode = (digitalRead(MODE_SWITCH) == HIGH);  // Switch open = attract mode
+  // Check attract mode switch (D10)
+  attractMode = (digitalRead(MODE_SWITCH) == HIGH);
+  
   if(attractMode){
     gameEnded = false;
   } 
@@ -193,22 +195,58 @@ void pong() {
     ballServing = false;  // No longer serving
   }
 
-  // Erase old ball position - but only if not in score area
-  if (!ballOverlapsScore(ballx, bally)) {
-    tv.set_pixel(ballx, bally, 0);
-    tv.set_pixel(ballx + 1, bally, 0);
-    tv.set_pixel(ballx, bally + 1, 0);
-    tv.set_pixel(ballx + 1, bally + 1, 0);
+  // Store old ball position for path checking
+  int oldBallX = ballx;
+  int oldBallY = bally;
+
+  // Safe erase old ball position - don't erase in digit areas
+  for (int x = ballx; x <= ballx + 1; x++) {
+    for (int y = bally; y <= bally + 1; y++) {
+      // Only erase if we're NOT in a digit area
+      bool inDigitArea = false;
+      
+      if (y >= 2 && y <= 12) {
+        // Check left score area
+        if ((score >= 10 && x >= 20 && x <= 37) || (score < 10 && x >= 25 && x <= 32)) {
+          inDigitArea = true;
+        }
+        // Check right score area  
+        else if ((score2 >= 10 && x >= 100 && x <= 117) || (score2 < 10 && x >= 105 && x <= 112)) {
+          inDigitArea = true;
+        }
+      }
+      
+      // Only erase if NOT in digit area
+      if (!inDigitArea) {
+        tv.set_pixel(x, y, 0);
+      }
+    }
   }
 
   moveBall();
 
-  // Draw new ball position - but only if not in score area
-  if (!ballOverlapsScore(ballx, bally)) {
-    tv.set_pixel(ballx, bally, 1);
-    tv.set_pixel(ballx + 1, bally, 1);
-    tv.set_pixel(ballx, bally + 1, 1);
-    tv.set_pixel(ballx + 1, bally + 1, 1);
+  // Safe draw new ball position - don't draw in digit areas
+  for (int x = ballx; x <= ballx + 1; x++) {
+    for (int y = bally; y <= bally + 1; y++) {
+      // Only draw if we're NOT in a digit area
+      bool inDigitArea = false;
+      
+      if (y >= 2 && y <= 12) {
+        // Check left score area
+        if ((score >= 10 && x >= 20 && x <= 37) || (score < 10 && x >= 25 && x <= 32)) {
+          inDigitArea = true;
+        }
+        // Check right score area  
+        else if ((score2 >= 10 && x >= 100 && x <= 117) || (score2 < 10 && x >= 105 && x <= 112)) {
+          inDigitArea = true;
+        }
+      }
+      
+      // Only draw if NOT in digit area
+      if (!inDigitArea) {
+        tv.set_pixel(x, y, 1);
+      }
+    }
   }
 
   tv.delay(1);
@@ -515,7 +553,7 @@ void drawLargeDigit(byte x, byte y, byte digit) {
       // Draw 3
       tv.draw_line(x+1, y, x+5, y, 1);       // top
       tv.draw_line(x+6, y+1, x+6, y+9, 1);   // right
-      tv.draw_line(x+1, y+5, x+5, y+5, 1);   // middle
+      tv.draw_line(x+1, y+5, x+3, y+5, 1);   // middle
       tv.draw_line(x+1, y+10, x+5, y+10, 1); // bottom
       break;
     case 4:
@@ -550,7 +588,7 @@ void drawLargeDigit(byte x, byte y, byte digit) {
       tv.draw_line(x+1, y, x+5, y, 1);       // top
       tv.draw_line(x, y+1, x, y+9, 1);       // left
       tv.draw_line(x+6, y+1, x+6, y+9, 1);   // right
-      tv.draw_line(x+1, y+5, x+5, y+5, 1);   // middle
+      tv.draw_line(x+1, y+5, x+3, y+5, 1);   // middle
       tv.draw_line(x+1, y+10, x+5, y+10, 1); // bottom
       break;
     case 9:
@@ -558,7 +596,7 @@ void drawLargeDigit(byte x, byte y, byte digit) {
       tv.draw_line(x+1, y, x+5, y, 1);       // top
       tv.draw_line(x, y+1, x, y+4, 1);       // top left
       tv.draw_line(x+6, y+1, x+6, y+9, 1);   // right
-      tv.draw_line(x+1, y+5, x+5, y+5, 1);   // middle
+      tv.draw_line(x+1, y+5, x+3, y+5, 1);   // middle
       tv.draw_line(x+1, y+10, x+5, y+10, 1); // bottom
       break;
   }
@@ -767,13 +805,13 @@ void drawLargeE(byte x, byte y) {
 
 void drawLargeV(byte x, byte y) {
   // Draw large V (8x12 pixels)
-  tv.draw_line(x, y, x+1, y+8, 1);        // left side
-  tv.draw_line(x+6, y, x+5, y+8, 1);      // right side
-  tv.draw_line(x+2, y+9, x+2, y+9, 1);    // bottom left
-  tv.draw_line(x+5, y+9, x+5, y+9, 1);    // bottom right
-  tv.draw_line(x+3, y+10, x+4, y+10, 1);  // bottom center
-  tv.set_pixel(x+3, y+11, 1);             // bottom point
-  tv.set_pixel(x+4, y+11, 1);             // bottom point
+  tv.draw_line(x, y, x+3, y+11, 1);        // left side
+  tv.draw_line(x+8, y, x+5, y+11, 1);      // right side
+  //tv.draw_line(x+2, y+9, x+2, y+11, 1);    // bottom left
+  //tv.draw_line(x+5, y+9, x+5, y+11, 1);    // bottom right
+  //tv.draw_line(x+3, y+10, x+4, y+10, 1);  // bottom center
+  //tv.set_pixel(x+3, y+11, 1);             // bottom point
+  //tv.set_pixel(x+4, y+11, 1);             // bottom point
 }
 
 void drawLargeR(byte x, byte y) {
@@ -994,15 +1032,39 @@ void updatePlayerAI() {
   paddleBy = (byte)(playerAiFloat + 0.5);
 }
 
+boolean ballPathOverlapsScore(int oldX, int oldY, int newX, int newY) {
+  // Check all positions along the ball's path for score overlaps
+  int deltaX = newX - oldX;
+  int deltaY = newY - oldY;
+  int steps = max(abs(deltaX), abs(deltaY));
+  
+  if (steps == 0) {
+    return ballOverlapsScore(newX, newY);
+  }
+  
+  for (int step = 0; step <= steps; step++) {
+    int checkX = oldX + (deltaX * step) / steps;
+    int checkY = oldY + (deltaY * step) / steps;
+    
+    if (ballOverlapsScore(checkX, checkY)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
 boolean ballOverlapsScore(int ballX, int ballY) {
-  // Check if any of the 4 ball pixels (2x2) overlap with score areas
+  // Simplified test - only avoid the ball in a small area around where digits actually are
   for (int x = ballX; x <= ballX + 1; x++) {
     for (int y = ballY; y <= ballY + 1; y++) {
-      // Check if this pixel is in either score area
-      if (y <= 13 && ((x >= 20 && x <= 35) || (x >= 100 && x <= 115))) {
-        return true;  // Ball overlaps score area
+      // Very tight bounds just around single digits for testing
+      if (y >= 2 && y <= 12) {
+        if ((x >= 25 && x <= 32) || (x >= 105 && x <= 112)) {
+          return true;  // Only avoid ball in very small digit areas
+        }
       }
     }
   }
-  return false;  // Ball is clear of score areas
+  return false;
 }
