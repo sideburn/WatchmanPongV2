@@ -5,6 +5,16 @@ https://github.com/nootropicdesign/arduino-tvout
 
 See Hardware Mods directory for the modifications you need to make to the Watchman.
 
+The basics are:
+
+• Pull the IF chip off the board.
+• Pull the RF modulator out and jump a wire from the RF pin to GND (reference photo
+arduino.jpeg bottom right corner you will see my jumper).
+• cut traces on the PCB to the pins on the tuner pot and VHF/UHF chip so it is no longer 
+making contects to the components on the board.
+• jump a wire from the pot to GND (see photo bodgeWires.jpeg where it says "jump")
+• run the bodge wires to the ardiono.
+
 I recommend an FD-10A model becase the IF chip is surface mounted and easy to remove.
 
 An FD-2A works also but the IF chip is throughhole and the pin locations to video and 
