@@ -3,18 +3,21 @@
 Requires TV.io library
 https://github.com/nootropicdesign/arduino-tvout
 
-Requires Hackvision library
-https://nootropicdesign.com/hackvision/games/
-https://github.com/nootropicdesign/hackvision
+See Hardware Mods directory for the modifications you need to make to the Watchman.
 
-Pinouts:
+I recommend an FD-10A model becase the IF chip is surface mounted and easy to remove.
 
-10k pullup for paddle
+An FD-2A works also but the IF chip is throughhole and the pin locations to video and 
+audio are on the opposite side of the chip (easy to find with some poking around). 
+You could just brute force cut the chip and RF tuner out with snips... 
+
+Arduino Nano Pinouts:
+
+pin A3 paddle - with 10k pullup
 
 pin 10 - start/quit
-pin A3 paddle
-pull low to trigger
 
 d11 - audio out 
 d9 to 1k resistor to composite in
 d7 to 470 ohm to composite in
+

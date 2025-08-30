@@ -22,7 +22,18 @@
 #define MAX_SCORE 11              // Max score to be reached
 #define FAULT_PERCENT 65          // Ai difficulty level, higher numbers are easier
 #define PADDLE_SMOOTHING 8        // Increase for more paddle smoothing (8=current, 16=very smooth, 6=more responsive)
-#define PADDLE_SENSITIVITY 4      // Adjusts touchyness of the paddle input from the tuner POT
+#define PADDLE_SENSITIVITY 2.5    // Adjusts touchyness of the paddle input from the tuner POT
+#define PADDLE_WIDTH 2            // Width of paddles in pixels
+#define PADDLE_HEIGHT 16          // Height of paddles in pixels
+
+// Musical note frequencies (in Hz)
+#define NOTE_C2  65.41    // Very deep - THX territory
+#define NOTE_C3  130.81
+#define NOTE_G3  196.00
+#define NOTE_C4  261.63
+#define NOTE_G4  392.00
+#define NOTE_C5  523.25
+
 
 // Pong variables
 int ballx, bally;
@@ -33,8 +44,8 @@ byte paddleAy = 44;               // Computer paddle (left side)
 byte paddleBy = 44;               // Human paddle (right side)
 byte paddleAx = 2;                // Computer paddle X position
 byte paddleBx = W - 10;           // Human paddle X position
-byte paddleWidth = 2;
-byte paddleLength = 12;
+byte paddleWidth = PADDLE_WIDTH;  // Use define instead of hardcoded value
+byte paddleLength = PADDLE_HEIGHT; // Use define instead of hardcoded value
 byte score = 0;                   // Computer score (left)
 byte score2 = 0;                  // Player score (right)
 boolean attractMode = false;      // Track if in attract mode
@@ -75,8 +86,9 @@ int potOffset = 35;               // Offset to shift the range up/down (negative
 TVout tv;
 
 // Function declarations
-void playTone(unsigned int frequency, unsigned long duration_ms);
 void initPong();
+void playTone(unsigned int frequency, unsigned long duration_ms);
+void startupTune();
 void initAttractScreen();
 void updateComputerPaddle();
 void updatePlayerAI();
@@ -119,14 +131,8 @@ void setup() {
 
   randomSeed(analogRead(0));
 
-  // Startup tones
-  playTone(100, 20);
-  tv.delay(16);
-  playTone(200, 20);
-  tv.delay(16);
-  playTone(400, 20);
-  tv.delay(16);
-  playTone(800, 20);
+  // Startup tune
+  startupTune();
 
   tv.delay(160);
   
@@ -139,6 +145,21 @@ void setup() {
   drawIntroScreen();
 
   initPong();
+}
+
+void startupTune() {
+  playTone(NOTE_C2, 300); 
+  tv.delay(50);
+  
+  playTone(NOTE_C3, 200); 
+  playTone(NOTE_G3, 200);
+  tv.delay(100);
+  
+  playTone(NOTE_C4, 400);
+  tv.delay(200);
+  
+  playTone(NOTE_G4, 100);
+  playTone(NOTE_C5, 150);
 }
 
 void loop() {
@@ -379,9 +400,9 @@ void moveBall() {
   // Paddle B (human - right side) bounds
   if (!paddleHit) {
     int leftPaddleB = paddleBx;
-    int rightPaddleB = paddleBx + paddleWidth + 2;  // Extended hit zone
-    int topPaddleB = paddleBy - 4;
-    int bottomPaddleB = paddleBy + paddleLength + 4;
+    int rightPaddleB = paddleBx + paddleWidth;  // Extended hit zone
+    int topPaddleB = paddleBy - 1;
+    int bottomPaddleB = paddleBy + paddleLength + 1;
     
     // Bounding box collision check
     if (topBall <= bottomPaddleB && bottomBall >= topPaddleB && 
@@ -621,18 +642,18 @@ void drawPaddle(int x, int y) {
 }
 
 void hitSound() {
-  if (!attractMode) playTone(523, 20);  // Only play sound if not in attract mode
+  if (!attractMode) playTone(493.88, 20);  // Only play sound if not in attract mode
 }
 
 void bounceSound() {
-  if (!attractMode) playTone(261, 20);  // Only play sound if not in attract mode
+  if (!attractMode) playTone(246.94, 20);  // Only play sound if not in attract mode
 }
 
 void missSound() {
   if (!attractMode) {
     for (int i = 0; i < 19; i++) {
       tv.delay(19);
-      playTone(240, 19);
+      playTone(246.94, 19);
     }
   }
 }
@@ -644,7 +665,7 @@ void drawNet() {
 }
 
 void gameOver() {
-  tv.delay(1000);
+  tv.delay(100);
   tv.fill(0);
   
   // Draw large "GAME OVER" using custom drawing
