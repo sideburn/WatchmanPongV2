@@ -1,5 +1,11 @@
 # WatchmanPongV2
 
+**Description:** Arduino-based Pong game that converts vintage Watchman portable TV into a retro gaming device using TV.io composite video output.
+
+**Author:** [Tavis Hord - Sideburn Studios]  
+
+---
+
 Demo video: https://youtube.com/shorts/m0Smps4umFc?si=Mw8ZHat44lLpZ-JR
 
 **Requires TV.io library**  
