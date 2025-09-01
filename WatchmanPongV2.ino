@@ -6,7 +6,8 @@
   - adjustable paddle smoothing
   - adjustable paddle sensitivity
   - auto attract mode on game end
-
+  
+  Tavis Hord
   © Sideburn Studios - August 2025
 ***************************************/
 
@@ -103,21 +104,24 @@ void missSound();
 void drawNet();
 void gameOver();
 void drawIntroScreen();
-void drawLargeS(byte x, byte y);
-void drawLargeI(byte x, byte y);
-void drawLargeD(byte x, byte y);
-void drawLargeB(byte x, byte y);
-void drawLargeU(byte x, byte y);
-void drawLargeN(byte x, byte y);
-void drawLargeP(byte x, byte y);
-void drawLargeO(byte x, byte y);
-void drawLargeG(byte x, byte y);
 void drawLargeGameOver();
+void drawLargeYouWin();
+void drawLargeIWin();
 void drawLargeA(byte x, byte y);
-void drawLargeM(byte x, byte y);
+void drawLargeB(byte x, byte y);
+void drawLargeD(byte x, byte y);
 void drawLargeE(byte x, byte y);
-void drawLargeV(byte x, byte y);
+void drawLargeG(byte x, byte y);
+void drawLargeI(byte x, byte y);
+void drawLargeM(byte x, byte y);
+void drawLargeN(byte x, byte y);
+void drawLargeO(byte x, byte y);
+void drawLargeP(byte x, byte y);
 void drawLargeR(byte x, byte y);
+void drawLargeS(byte x, byte y);
+void drawLargeU(byte x, byte y);
+void drawLargeV(byte x, byte y);
+void drawLargeW(byte x, byte y);
 void moveBall();
 void pong();
 
@@ -143,7 +147,6 @@ void setup() {
 
   // Show intro splash screen
   drawIntroScreen();
-
   initPong();
 }
 
@@ -668,8 +671,23 @@ void gameOver() {
   tv.delay(100);
   tv.fill(0);
   
-  // Draw large "GAME OVER" using custom drawing
-  drawLargeGameOver();
+  // Check who won and display appropriate message
+  if (!attractMode) {
+    if (score2 == MAX_SCORE) {
+      // Player won
+      drawLargeYouWin();
+    } else if (score == MAX_SCORE) {
+      // Computer won
+      drawLargeIWin();
+    } else {
+      // Fallback to original game over screen
+      drawLargeGameOver();
+    }
+  } else {
+    // In attract mode, use original game over
+    drawLargeGameOver();
+  }
+  
   drawScore();
   gameEnded = true;
   tv.delay(3000);
@@ -683,7 +701,7 @@ void drawIntroScreen() {
   byte lineSpacing = 18;  
 
   // Draw "SIDE"
-  byte y1 = 15;
+  byte y1 = 22;
   drawLargeS(startX, y1);
   drawLargeI(startX + 20, y1);
   drawLargeD(startX + 40, y1);
@@ -707,68 +725,48 @@ void drawIntroScreen() {
   tv.delay(3000);
 }
 
-void drawLargeS(byte x, byte y) {
-  tv.draw_line(x+1, y, x+6, y, 1);        // top
-  tv.draw_line(x, y+1, x, y+5, 1);        // upper left
-  tv.draw_line(x+1, y+6, x+6, y+6, 1);    // middle
-  tv.draw_line(x+7, y+7, x+7, y+10, 1);   // lower right
-  tv.draw_line(x+1, y+11, x+6, y+11, 1);  // bottom
+void drawLargeYouWin() {
+  // Positioning variables
+  byte startXOffset = 10;
+
+  byte youX = 34 + startXOffset;     // X position for "YOU" 
+  byte youY = 30;     // Y position for "YOU"
+  byte winX = 35 + startXOffset;     // X position for "WIN"
+  byte winY = 50;     // Y position for "WIN"
+  byte letterSpacing = 20;  // Space between letters
+  
+  // Draw "YOU" 
+  tv.draw_line(youX+2, youY, youX+5, youY+6, 1);      // left diagonal
+  tv.draw_line(youX+8, youY, youX+5, youY+6, 1);    // right diagonal  
+  tv.draw_line(youX+5, youY+6, youX+5, youY+11, 1); // vertical down
+  
+  drawLargeO(youX + letterSpacing, youY);
+  drawLargeU(youX + (letterSpacing * 2), youY);
+  
+  // Draw "WIN"
+  drawLargeW(winX, winY);
+  drawLargeI(winX + letterSpacing, winY);
+  drawLargeN(winX + (letterSpacing * 2), winY);
 }
 
-void drawLargeI(byte x, byte y) {
-  tv.draw_line(x, y, x+6, y, 1);          // top
-  tv.draw_line(x+3, y, x+3, y+11, 1);     // vertical
-  tv.draw_line(x, y+11, x+6, y+11, 1);    // bottom
-}
-
-void drawLargeD(byte x, byte y) {
-  tv.draw_line(x, y, x, y+11, 1);         // left
-  tv.draw_line(x+1, y, x+5, y, 1);        // top
-  tv.draw_line(x+6, y+1, x+6, y+10, 1);   // right
-  tv.draw_line(x+1, y+11, x+5, y+11, 1);  // bottom
-}
-
-void drawLargeB(byte x, byte y) {
-  tv.draw_line(x, y, x, y+11, 1);         // left
-  tv.draw_line(x+1, y, x+5, y, 1);        // top
-  tv.draw_line(x+6, y+1, x+6, y+5, 1);    // upper right
-  tv.draw_line(x+1, y+6, x+5, y+6, 1);    // middle
-  tv.draw_line(x+6, y+7, x+6, y+10, 1);   // lower right
-  tv.draw_line(x+1, y+11, x+5, y+11, 1);  // bottom
-}
-
-void drawLargeU(byte x, byte y) {
-  tv.draw_line(x, y, x, y+10, 1);         // left
-  tv.draw_line(x+7, y, x+7, y+10, 1);     // right
-  tv.draw_line(x+1, y+11, x+6, y+11, 1);  // bottom
-}
-
-void drawLargeN(byte x, byte y) {
-  tv.draw_line(x, y, x, y+11, 1);         // left
-  tv.draw_line(x+7, y, x+7, y+11, 1);     // right
-  tv.draw_line(x, y, x+7, y+11, 1);       // diagonal
-}
-
-void drawLargeP(byte x, byte y) {
-  tv.draw_line(x, y, x, y+11, 1);         // left
-  tv.draw_line(x+1, y, x+5, y, 1);        // top
-  tv.draw_line(x+6, y+1, x+6, y+5, 1);    // right
-  tv.draw_line(x+1, y+6, x+5, y+6, 1);    // middle
-}
-
-void drawLargeO(byte x, byte y) {
-  tv.draw_line(x+1, y, x+6, y, 1);        // top
-  tv.draw_line(x, y+1, x, y+10, 1);       // left
-  tv.draw_line(x+7, y+1, x+7, y+10, 1);   // right
-  tv.draw_line(x+1, y+11, x+6, y+11, 1);  // bottom
-}
-
-void drawLargeG(byte x, byte y) {
-  tv.draw_line(x+1, y, x+6, y, 1);        // top
-  tv.draw_line(x, y+1, x, y+10, 1);       // left side
-  tv.draw_line(x+1, y+11, x+6, y+11, 1);  // bottom
-  tv.draw_line(x+7, y+7, x+7, y+10, 1);   // right side bottom
-  tv.draw_line(x+4, y+6, x+7, y+6, 1);    // middle bar
+// New function for "I WIN"  
+void drawLargeIWin() {
+  // Positioning variables
+  byte startXOffset = 10;
+  
+  byte iX = 55 + startXOffset;       // X position for "I" 
+  byte iY = 30;       // Y position for "I"
+  byte winX = 35 + startXOffset;     // X position for "WIN"
+  byte winY = 50;     // Y position for "WIN"
+  byte letterSpacing = 20;  // Space between letters
+  
+  // Draw "I"
+  drawLargeI(iX, iY);
+  
+  // Draw "WIN"
+  drawLargeW(winX, winY);
+  drawLargeI(winX + letterSpacing, winY);
+  drawLargeN(winX + (letterSpacing * 2), winY);
 }
 
 void drawLargeGameOver() {
@@ -793,27 +791,26 @@ void drawLargeGameOver() {
 }
 
 void drawLargeA(byte x, byte y) {
-  // Draw large A (8x12 pixels)
-  
-  // Top horizontal bar (double-thick)
   tv.draw_line(x+1, y, x+5, y, 1);
-
-  // Left vertical bar
   tv.draw_line(x+1, y, x+1, y+11, 1);
-
-  // Right vertical bar
   tv.draw_line(x+8, y, x+8, y+11, 1);
-
-  // Crossbar (double-thick)
   tv.draw_line(x+1, y+7, x+5, y+7, 1);
 }
 
-void drawLargeM(byte x, byte y) {
-  // Draw large M (8x12 pixels)
-  tv.draw_line(x, y, x, y+11, 1);         // left side
-  tv.draw_line(x+8, y, x+8, y+11, 1);     // right side
-  tv.draw_line(x, y, x+4, y+4, 1);        // left diagonal
-  tv.draw_line(x+7, y, x+4, y+4, 1);      // right diagonal
+void drawLargeB(byte x, byte y) {
+  tv.draw_line(x, y, x, y+11, 1);         // left
+  tv.draw_line(x+1, y, x+5, y, 1);        // top
+  tv.draw_line(x+6, y+1, x+6, y+5, 1);    // upper right
+  tv.draw_line(x+1, y+6, x+5, y+6, 1);    // middle
+  tv.draw_line(x+6, y+7, x+6, y+10, 1);   // lower right
+  tv.draw_line(x+1, y+11, x+5, y+11, 1);  // bottom
+}
+
+void drawLargeD(byte x, byte y) {
+  tv.draw_line(x, y, x, y+11, 1);         // left
+  tv.draw_line(x+1, y, x+5, y, 1);        // top
+  tv.draw_line(x+6, y+1, x+6, y+10, 1);   // right
+  tv.draw_line(x+1, y+11, x+5, y+11, 1);  // bottom
 }
 
 void drawLargeE(byte x, byte y) {
@@ -824,15 +821,46 @@ void drawLargeE(byte x, byte y) {
   tv.draw_line(x+1, y+11, x+6, y+11, 1);  // bottom
 }
 
-void drawLargeV(byte x, byte y) {
-  // Draw large V (8x12 pixels)
-  tv.draw_line(x, y, x+3, y+11, 1);        // left side
-  tv.draw_line(x+8, y, x+5, y+11, 1);      // right side
-  //tv.draw_line(x+2, y+9, x+2, y+11, 1);    // bottom left
-  //tv.draw_line(x+5, y+9, x+5, y+11, 1);    // bottom right
-  //tv.draw_line(x+3, y+10, x+4, y+10, 1);  // bottom center
-  //tv.set_pixel(x+3, y+11, 1);             // bottom point
-  //tv.set_pixel(x+4, y+11, 1);             // bottom point
+void drawLargeG(byte x, byte y) {
+  tv.draw_line(x+1, y, x+6, y, 1);        // top
+  tv.draw_line(x, y+1, x, y+10, 1);       // left side
+  tv.draw_line(x+1, y+11, x+6, y+11, 1);  // bottom
+  tv.draw_line(x+7, y+7, x+7, y+10, 1);   // right side bottom
+  tv.draw_line(x+4, y+6, x+7, y+6, 1);    // middle bar
+}
+
+void drawLargeI(byte x, byte y) {
+  tv.draw_line(x, y, x+6, y, 1);          // top
+  tv.draw_line(x+3, y, x+3, y+11, 1);     // vertical
+  tv.draw_line(x, y+11, x+6, y+11, 1);    // bottom
+}
+
+void drawLargeM(byte x, byte y) {
+  // Draw large M (8x12 pixels)
+  tv.draw_line(x, y, x, y+11, 1);         // left side
+  tv.draw_line(x+8, y, x+8, y+11, 1);     // right side
+  tv.draw_line(x, y, x+4, y+4, 1);        // left diagonal
+  tv.draw_line(x+7, y, x+4, y+4, 1);      // right diagonal
+}
+
+void drawLargeN(byte x, byte y) {
+  tv.draw_line(x, y, x, y+11, 1);         // left
+  tv.draw_line(x+7, y, x+7, y+11, 1);     // right
+  tv.draw_line(x, y, x+7, y+11, 1);       // diagonal
+}
+
+void drawLargeO(byte x, byte y) {
+  tv.draw_line(x+1, y, x+6, y, 1);        // top
+  tv.draw_line(x, y+1, x, y+10, 1);       // left
+  tv.draw_line(x+7, y+1, x+7, y+10, 1);   // right
+  tv.draw_line(x+1, y+11, x+6, y+11, 1);  // bottom
+}
+
+void drawLargeP(byte x, byte y) {
+  tv.draw_line(x, y, x, y+11, 1);         // left
+  tv.draw_line(x+1, y, x+5, y, 1);        // top
+  tv.draw_line(x+6, y+1, x+6, y+5, 1);    // right
+  tv.draw_line(x+1, y+6, x+5, y+6, 1);    // middle
 }
 
 void drawLargeR(byte x, byte y) {
@@ -844,6 +872,34 @@ void drawLargeR(byte x, byte y) {
   tv.draw_line(x+3, y+7, x+4, y+8, 1);    // diagonal
   tv.draw_line(x+5, y+9, x+6, y+11, 1);   // right bottom
 }
+
+void drawLargeS(byte x, byte y) {
+  tv.draw_line(x+1, y, x+6, y, 1);        // top
+  tv.draw_line(x, y+1, x, y+5, 1);        // upper left
+  tv.draw_line(x+1, y+6, x+6, y+6, 1);    // middle
+  tv.draw_line(x+7, y+7, x+7, y+10, 1);   // lower right
+  tv.draw_line(x+1, y+11, x+6, y+11, 1);  // bottom
+}
+
+void drawLargeU(byte x, byte y) {
+  tv.draw_line(x, y, x, y+10, 1);         // left
+  tv.draw_line(x+7, y, x+7, y+10, 1);     // right
+  tv.draw_line(x+1, y+11, x+6, y+11, 1);  // bottom
+}
+
+void drawLargeV(byte x, byte y) {
+  // Draw large V (8x12 pixels)
+  tv.draw_line(x, y, x+3, y+11, 1);        // left side
+  tv.draw_line(x+8, y, x+5, y+11, 1);      // right side
+}
+
+void drawLargeW(byte x, byte y) {
+  tv.draw_line(x, y+11, x, y, 1);         // left side
+  tv.draw_line(x+8, y+11, x+8, y, 1);     // right side
+  tv.draw_line(x, y+11, x+4, y+7, 1);     // left diagonal
+  tv.draw_line(x+7, y+11, x+4, y+7, 1);   // right diagonal
+}
+
 
 void initAttractScreen(){
   tv.fill(0);
