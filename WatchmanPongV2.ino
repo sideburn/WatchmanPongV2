@@ -28,7 +28,7 @@
 #define PADDLE_HEIGHT 16          // Height of paddles in pixels
 
 // Musical note frequencies (in Hz)
-#define NOTE_C2  65.41    // Very deep - THX territory
+#define NOTE_C2  65.41
 #define NOTE_C3  130.81
 #define NOTE_G3  196.00
 #define NOTE_C4  261.63
@@ -40,49 +40,49 @@
 int ballx, bally;
 char dx;
 char dy;
-boolean ballServing = false;      // Track if ball is waiting to serve
-byte paddleAy = 44;               // Computer paddle (left side)
-byte paddleBy = 44;               // Human paddle (right side)
-byte paddleAx = 2;                // Computer paddle X position
-byte paddleBx = W - 10;           // Human paddle X position
-byte paddleWidth = PADDLE_WIDTH;  // Use define instead of hardcoded value
-byte paddleLength = PADDLE_HEIGHT; // Use define instead of hardcoded value
-byte score = 0;                   // Computer score (left)
-byte score2 = 0;                  // Player score (right)
-boolean attractMode = false;      // Track if in attract mode
-boolean gameEnded = true;         // Startup default.
-                                  // False = game starts on power up (if the switch is set to start). 
-                                  // True = always boots in attract mode.
-boolean lastSwitchState = HIGH;   // Assume HIGH = attract off at startup
+boolean ballServing = false;        // Track if ball is waiting to serve
+byte paddleAy = 44;                 // Computer paddle (left side)
+byte paddleBy = 44;                 // Human paddle (right side)
+byte paddleAx = 2;                  // Computer paddle X position
+byte paddleBx = W - 10;             // Human paddle X position
+byte paddleWidth = PADDLE_WIDTH;    // Use define instead of hardcoded value
+byte paddleLength = PADDLE_HEIGHT;  // Use define instead of hardcoded value
+byte score = 0;                     // Computer score (left)
+byte score2 = 0;                    // Player score (right)
+boolean attractMode = false;        // Track if in attract mode
+boolean gameEnded = true;           // Startup default.
+                                    // False = game starts on power up (if the switch is set to start). 
+                                    // True = always boots in attract mode.
+boolean lastSwitchState = HIGH;     // Assume HIGH = attract off at startup
 
 // Rally speed system variables
-byte rallyCount = 0;              // Track consecutive hits without a miss
-byte speedLevel = 0;              // Current speed level (0-3)
-byte frameSkip = 0;               // Frame counter for speed control
-byte maxSpeedLevel = 3;           // Maximum speed level
+byte rallyCount = 0;                // Track consecutive hits without a miss
+byte speedLevel = 0;                // Current speed level (0-3)
+byte frameSkip = 0;                 // Frame counter for speed control
+byte maxSpeedLevel = 3;             // Maximum speed level
 
 // Computer AI variables
-float aiPaddleTarget = 44.0;      // Target position for smooth AI movement
-float aiPaddleFloat = 44.0;       // Floating point position for smooth movement
-float maxAiSpeed = 2.5;           // Maximum pixels per frame the AI can move
-float aiMomentum = 0.0;           // Track movement momentum to prevent oscillation
+float aiPaddleTarget = 44.0;        // Target position for smooth AI movement
+float aiPaddleFloat = 44.0;         // Floating point position for smooth movement
+float maxAiSpeed = 2.5;             // Maximum pixels per frame the AI can move
+float aiMomentum = 0.0;             // Track movement momentum to prevent oscillation
 
 // Player AI variables (for attract mode)
-float playerAiTarget = 44.0;      // Target position for player AI
-float playerAiFloat = 44.0;       // Floating point position for player AI
-float playerMaxSpeed = 0.9;       // Slower than computer AI
-float playerAiMomentum = 0.0;     // Player AI momentum
+float playerAiTarget = 44.0;        // Target position for player AI
+float playerAiFloat = 44.0;         // Floating point position for player AI
+float playerMaxSpeed = 0.9;         // Slower than computer AI
+float playerAiMomentum = 0.0;       // Player AI momentum
 
 // Paddle smoothing variables
 int paddleBuffer[PADDLE_SMOOTHING];
 byte bufferIndex = 0;
 boolean bufferFilled = false;
-byte lastPaddleAy = 44;           // Last paddle position for deadzone
+byte lastPaddleAy = 44;             // Last paddle position for deadzone
 
 // Paddle calibration variables
-int baseMinReading = 840;         // Base minimum paddle POS reading
-int baseMaxReading = 870;         // Base maximum paddle POS reading
-int potOffset = 35;               // Offset to shift the range up/down (negative values shift paddle down)
+int baseMinReading = 840;           // Base minimum paddle POS reading
+int baseMaxReading = 870;           // Base maximum paddle POS reading
+int potOffset = 35;                 // Offset to shift the range up/down (negative values shift paddle down)
 
 TVout tv;
 
@@ -171,11 +171,17 @@ void loop() {
  // --- restart game switching --
   if (currentSwitch != lastSwitchState) {
     if (currentSwitch) {
-      // switched into attract mode → start fresh attract game
+      // switched out of attract mode → start new game
       tv.delay(3000);
       initPong();
     } else {
-      // switched out of attract → start fresh real game
+      // switched into attract →  switch to demo
+      if(!gameEnded){ //if game in play and canceled
+        tv.fill(0);
+        drawLargeGameOver();
+        tv.delay(1000);
+        initAttractScreen();
+      }
     }
   }
   lastSwitchState = currentSwitch;
@@ -680,11 +686,11 @@ void gameOver() {
       // Computer won
       drawLargeIWin();
     } else {
-      // Fallback to original game over screen
+      // Fallback to standard game over screen
       drawLargeGameOver();
     }
   } else {
-    // In attract mode, use original game over
+    // In attract mode, display standard game over
     drawLargeGameOver();
   }
   
