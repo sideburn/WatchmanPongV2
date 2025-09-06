@@ -6,6 +6,7 @@
   - adjustable paddle smoothing
   - adjustable paddle sensitivity
   - auto attract mode on game end
+  - skill level select on startup
   
   Tavis Hord
   © Sideburn Studios - August 2025
@@ -21,7 +22,8 @@
 #define MODE_SWITCH 10            //  D10 switch for start / stop (attract mode)
 
 #define MAX_SCORE 11              // Max score to be reached
-#define FAULT_PERCENT 65          // Ai difficulty level, higher numbers are easier
+#define DEFAULT_FAULT_PERCENT 65  // Default Ai difficulty level, higher numbers are easier
+#define EASY_FAULT_PERCENT 100    // Easy mode fault percent
 #define PADDLE_SMOOTHING 8        // Increase for more paddle smoothing (8=current, 16=very smooth, 6=more responsive)
 #define PADDLE_SENSITIVITY 2.5    // Adjusts touchyness of the paddle input from the tuner POT
 #define PADDLE_WIDTH 2            // Width of paddles in pixels
@@ -34,6 +36,10 @@
 #define NOTE_C4  261.63
 #define NOTE_G4  392.00
 #define NOTE_C5  523.25
+
+// Skill level variables
+boolean easyMode = false;         
+int currentFaultPercent = DEFAULT_FAULT_PERCENT;
 
 // Pong variables
 int ballx, bally;
@@ -121,6 +127,9 @@ void drawLargeS(byte x, byte y);
 void drawLargeU(byte x, byte y);
 void drawLargeV(byte x, byte y);
 void drawLargeW(byte x, byte y);
+void drawLargeY(byte x, byte y);
+void drawEasyModeScreen();
+void checkSkillLevel();
 void moveBall();
 void pong();
 
@@ -134,6 +143,9 @@ void setup() {
 
   randomSeed(analogRead(0));
 
+  // Check skill level on startup
+  checkSkillLevel();
+
   // Startup tune
   startupTune();
 
@@ -146,7 +158,58 @@ void setup() {
 
   // Show intro splash screen
   drawIntroScreen();
+  
+  // Show easy mode screen if enabled
+  if (easyMode) {
+    drawEasyModeScreen();
+  }
+  
   initPong();
+}
+
+void checkSkillLevel() {
+  // Read A3 paddle position on startup to determine skill level
+  int startupReading = analogRead(A3);
+  
+  if (startupReading < 800) {
+    easyMode = true;
+    currentFaultPercent = EASY_FAULT_PERCENT;
+  } else {
+    easyMode = false;
+    currentFaultPercent = DEFAULT_FAULT_PERCENT;
+  }
+}
+
+void drawEasyModeScreen() {
+ tv.fill(0);
+ 
+ // Center "EASY" and "MODE" on screen
+ byte letterSpacing = 18;
+
+ byte xOffset = 2;
+ byte yOffset = 0;
+ 
+ byte easyStartX = 35 + xOffset;  // Centered for 4 letters with spacing
+ byte easyY = 27 + yOffset;       // Upper middle of screen
+ 
+ // Draw "EASY"
+ drawLargeE(easyStartX, easyY);
+ drawLargeA(easyStartX + letterSpacing, easyY);
+ drawLargeS(easyStartX + (letterSpacing * 2), easyY);
+ drawLargeY(easyStartX + (letterSpacing * 3), easyY);
+ 
+ // Calculate positions for "MODE" (4 letters)
+ byte modeStartX = 35 + xOffset;  // Centered for 4 letters with spacing
+ byte modeY = 47 + yOffset;       // Lower middle of screen
+ 
+ // Draw "MODE"
+ drawLargeM(modeStartX, modeY);
+ drawLargeO(modeStartX + letterSpacing, modeY);
+ drawLargeD(modeStartX + (letterSpacing * 2), modeY);
+ drawLargeE(modeStartX + (letterSpacing * 3), modeY);
+ 
+ // Hold easy mode screen for 2 seconds
+ tv.delay(2000);
 }
 
 void startupTune() {
@@ -165,14 +228,14 @@ void startupTune() {
 }
 
 void loop() {
+  bool currentSwitch = (digitalRead(MODE_SWITCH) == LOW);
 
-  // int rawValue = analogRead(A3);
-
+  // DEBUG: Print raw A3 value (comment out when not needed)
+  //int rawValue = analogRead(A3);
   // Serial.print("A3 Raw: ");
   // Serial.print(rawValue);
   // Serial.print("\n");
 
-  bool currentSwitch = (digitalRead(MODE_SWITCH) == LOW);
  // --- detect switch change ---
  // --- restart game switching --
   if (currentSwitch != lastSwitchState) {
@@ -708,12 +771,15 @@ void gameOver() {
 void drawIntroScreen() {
   tv.fill(0);
 
+  byte xOffset = 0;
+  byte yOffset = 0;
+  
   // Adjust positions to center text
-  byte startX = 32; 
+  byte startX = 33 + xOffset; 
   byte lineSpacing = 18;  
 
   // Draw "SIDE"
-  byte y1 = 22;
+  byte y1 = 20 + yOffset;
   drawLargeS(startX, y1);
   drawLargeI(startX + 20, y1);
   drawLargeD(startX + 40, y1);
@@ -912,6 +978,11 @@ void drawLargeW(byte x, byte y) {
   tv.draw_line(x+7, y+11, x+4, y+7, 1);   // right diagonal
 }
 
+void drawLargeY(byte x, byte y) {
+  tv.draw_line(x, y, x+3, y+5, 1);        // left diagonal to center
+  tv.draw_line(x+7, y, x+4, y+5, 1);      // right diagonal to center
+  tv.draw_line(x+3, y+5, x+3, y+11, 1);   // vertical down from center
+}
 
 void initAttractScreen(){
   tv.fill(0);
@@ -986,7 +1057,7 @@ void updateComputerPaddle() {
     
     // slow the movement down to cause occasional misses
     int errorChance = random(0, 100);
-    if (errorChance < FAULT_PERCENT) { //% chance we slow him down
+    if (errorChance < currentFaultPercent) {  //% chance we slow him down
       if (speedLevel >= 3) {
         currentMaxSpeed = maxAiSpeed * 0.70;  // 30% slower at speed level 3
       }
