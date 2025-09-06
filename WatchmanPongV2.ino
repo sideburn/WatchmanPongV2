@@ -35,7 +35,6 @@
 #define NOTE_G4  392.00
 #define NOTE_C5  523.25
 
-
 // Pong variables
 int ballx, bally;
 char dx;
@@ -166,6 +165,13 @@ void startupTune() {
 }
 
 void loop() {
+
+  // int rawValue = analogRead(A3);
+
+  // Serial.print("A3 Raw: ");
+  // Serial.print(rawValue);
+  // Serial.print("\n");
+
   bool currentSwitch = (digitalRead(MODE_SWITCH) == LOW);
  // --- detect switch change ---
  // --- restart game switching --
@@ -409,9 +415,9 @@ void moveBall() {
   // Paddle B (human - right side) bounds
   if (!paddleHit) {
     int leftPaddleB = paddleBx;
-    int rightPaddleB = paddleBx + paddleWidth;  // Extended hit zone
-    int topPaddleB = paddleBy - 1;
-    int bottomPaddleB = paddleBy + paddleLength + 1;
+    int rightPaddleB = paddleBx + paddleWidth;
+    int topPaddleB = paddleBy - 1; //Extended top hit zone by 1 pixel
+    int bottomPaddleB = paddleBy + paddleLength + 1; //Extended bottom hit zone by 1 pixel
     
     // Bounding box collision check
     if (topBall <= bottomPaddleB && bottomBall >= topPaddleB && 
