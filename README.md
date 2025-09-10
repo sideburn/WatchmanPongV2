@@ -16,8 +16,8 @@ https://github.com/nootropicdesign/arduino-tvout
 
 • Pull the IF chip off the board.  
 • Pull the RF modulator out and jump a wire from the RF pin to GND (reference photo arduino.jpeg bottom right corner you will see my jumper).  
-• Cut traces on the PCB to the pins on the tuner pot and VHF/UHF chip so it is no longer making contacts to the components on the board.  
-• Jump a wire from the pot to GND (see photo bodgeWires.jpeg where it says "jump")  
+• Cut traces on the PCB to the pins on the tuner pot (or remove pot and cut / bend unused pins) and VHF/UHF chip so it is no longer making contacts to the components on the board.  
+• Jump a wire from the pot to GND (see photo wiring.jpeg where it says "jumper")  
 • Run the bodge wires to the arduino.  
 
 I recommend an FD-10A model because the IF chip is surface mounted and easy to remove.
@@ -29,7 +29,7 @@ You could just brute force cut the chip and RF tuner out with snips...
 ## Arduino Nano Pinouts:
 
 **Board type:** Arduino Nano  
-**Processor:** ATmega328P (Old Bootloader)
+**Processor:** ATmega328P (may need Old Bootloader if miniusb older version)
 
 - **pin A3** - paddle (with 10k pullup)
 - **pin 10** - start/quit  

@@ -1,0 +1,12 @@
+Build times:
+
+15 minutes:	Component removal and cleanup (band switch, IF chip, RF modulator)
+10 minutes:	Trace cuts (tuner pot, band switch)
+3 minutes:	Jumpers (rf and tuner pot)
+2 minutes:	Switch reinstall
+30 min:		PCB wiring
+30 min:		Arduino flashing and wiring
+30 min		Tuning and final assembly
+
+
+2 hr

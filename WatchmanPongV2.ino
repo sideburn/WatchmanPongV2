@@ -17,6 +17,8 @@
 #include <video_gen.h>
 #include <Controllers.h>
 
+#define DEBUG false
+
 #define W 135
 #define H 98
 #define MODE_SWITCH 10            //  D10 switch for start / stop (attract mode)
@@ -85,9 +87,9 @@ boolean bufferFilled = false;
 byte lastPaddleAy = 44;             // Last paddle position for deadzone
 
 // Paddle calibration variables
-int baseMinReading = 840;           // Base minimum paddle POS reading
-int baseMaxReading = 870;           // Base maximum paddle POS reading
-int potOffset = 35;                 // Offset to shift the range up/down (negative values shift paddle down)
+int baseMinReading = 775;           // Base minimum paddle POS reading
+int baseMaxReading = 850;           // Base maximum paddle POS reading
+int potOffset = 0;                 // Offset to shift the range up/down (negative values shift paddle down)
 
 TVout tv;
 
@@ -135,7 +137,9 @@ void pong();
 
 void setup() {  
   // Add serial for debug output
-  //Serial.begin(9600);
+  #ifdef DEBUG
+  Serial.begin(9600);
+  #endif
   
   // Set up D10 as attract mode switch
   pinMode(MODE_SWITCH, INPUT_PULLUP);  // D10 with internal pull-up
@@ -171,7 +175,7 @@ void checkSkillLevel() {
   // Read A3 paddle position on startup to determine skill level
   int startupReading = analogRead(A3);
   
-  if (startupReading < 800) {
+  if (startupReading < 600) {
     easyMode = true;
     currentFaultPercent = EASY_FAULT_PERCENT;
   } else {
@@ -230,11 +234,13 @@ void startupTune() {
 void loop() {
   bool currentSwitch = (digitalRead(MODE_SWITCH) == LOW);
 
+  #ifdef DEBUG
   // DEBUG: Print raw A3 value (comment out when not needed)
-  //int rawValue = analogRead(A3);
-  // Serial.print("A3 Raw: ");
-  // Serial.print(rawValue);
-  // Serial.print("\n");
+  int rawValue = analogRead(A3);
+  Serial.print("A3 Raw: ");
+  Serial.print(rawValue);
+  Serial.print("\n");
+  #endif
 
  // --- detect switch change ---
  // --- restart game switching --
