@@ -39,6 +39,9 @@
 #define NOTE_G4  392.00
 #define NOTE_C5  523.25
 
+boolean gameEnded = true;           // Startup default.
+                                    // False = game starts on power up (if the switch is set to start). 
+                                    // True = always boots in attract mode.
 // Skill level variables
 boolean easyMode = false;         
 int currentFaultPercent = DEFAULT_FAULT_PERCENT;
@@ -57,9 +60,6 @@ byte paddleLength = PADDLE_HEIGHT;  // Use define instead of hardcoded value
 byte score = 0;                     // Computer score (left)
 byte score2 = 0;                    // Player score (right)
 boolean attractMode = false;        // Track if in attract mode
-boolean gameEnded = true;           // Startup default.
-                                    // False = game starts on power up (if the switch is set to start). 
-                                    // True = always boots in attract mode.
 boolean lastSwitchState = HIGH;     // Assume HIGH = attract off at startup
 
 // Rally speed system variables
@@ -175,7 +175,7 @@ void checkSkillLevel() {
   // Read A3 paddle position on startup to determine skill level
   int startupReading = analogRead(A3);
   
-  if (startupReading < 600) {
+  if (startupReading < baseMinReading - 100) {
     easyMode = true;
     currentFaultPercent = EASY_FAULT_PERCENT;
   } else {
@@ -551,28 +551,13 @@ void drawPaddles() {
   } else {
     // Human player - Read raw analog value from A3 (potentiometer with 10K pull-up)
     int rawValue = analogRead(A3);
-    
-    // DEBUG: Print raw A3 value (comment out when not needed)
-    // Serial.print("A3 Raw: ");
-    // Serial.print(rawValue);
-    // Serial.print("\n");
 
     // Apply offset to shift the effective range
     int adjustedMin = baseMinReading + potOffset;
     int adjustedMax = baseMaxReading + potOffset;
     
-    // DEBUG: Print adjusted range (comment out when not needed)
-    // Serial.print(" | Range: ");
-    // Serial.print(adjustedMin);
-    // Serial.print("-");
-    // Serial.print(adjustedMax);
-    
     // Constrain the raw value to adjusted range
     rawValue = constrain(rawValue, adjustedMin, adjustedMax);
-    
-    // DEBUG: Print constrained value (comment out when not needed)
-    // Serial.print(" | Constrained: ");
-    // Serial.println(rawValue);
     
     // Paddle smoothing
     // Add to circular buffer for smoothing

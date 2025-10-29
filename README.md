@@ -8,6 +8,8 @@
 
 Demo video: https://youtube.com/shorts/m0Smps4umFc?si=Mw8ZHat44lLpZ-JR
 
+Tutorial video: https://youtu.be/tdPy1yAdI2o?si=-mn6aV_OdRjlCaoS
+
 **Requires TV.io library**  
 https://github.com/nootropicdesign/arduino-tvout
 
