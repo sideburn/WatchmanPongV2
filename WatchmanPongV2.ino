@@ -7,6 +7,7 @@
   - adjustable paddle sensitivity
   - auto attract mode on game end
   - skill level select on startup
+  - paddle reverse control
   
   Tavis Hord
   © Sideburn Studios - August 2025
@@ -30,6 +31,15 @@
 #define PADDLE_SENSITIVITY 2.5    // Adjusts touchyness of the paddle input from the tuner POT
 #define PADDLE_WIDTH 2            // Width of paddles in pixels
 #define PADDLE_HEIGHT 16          // Height of paddles in pixels
+
+#define PADDLE_REVERSE false       // Set to true to reverse paddle direction (for older 1986 model FD-10A )
+
+// Paddle calibration values
+#define NORMAL_MIN_READING 775
+#define NORMAL_MAX_READING 850
+#define REVERSE_MIN_READING 900
+#define REVERSE_MAX_READING 930
+
 
 // Musical note frequencies (in Hz)
 #define NOTE_C2  65.41
@@ -87,9 +97,9 @@ boolean bufferFilled = false;
 byte lastPaddleAy = 44;             // Last paddle position for deadzone
 
 // Paddle calibration variables
-int baseMinReading = 775;           // Base minimum paddle POS reading
-int baseMaxReading = 850;           // Base maximum paddle POS reading
-int potOffset = 0;                 // Offset to shift the range up/down (negative values shift paddle down)
+int baseMinReading;           // Base minimum paddle POS reading (set in setup based on PADDLE_REVERSE)
+int baseMaxReading;           // Base maximum paddle POS reading (set in setup based on PADDLE_REVERSE)
+int potOffset = 0;            // Offset to shift the range up/down (negative values shift paddle down)
 
 TVout tv;
 
@@ -140,6 +150,15 @@ void setup() {
   #ifdef DEBUG
   Serial.begin(9600);
   #endif
+
+    // Set paddle calibration based on reverse setting
+  if (PADDLE_REVERSE) {
+    baseMinReading = REVERSE_MIN_READING;
+    baseMaxReading = REVERSE_MAX_READING;
+  } else {
+    baseMinReading = NORMAL_MIN_READING;
+    baseMaxReading = NORMAL_MAX_READING;
+  }
   
   // Set up D10 as attract mode switch
   pinMode(MODE_SWITCH, INPUT_PULLUP);  // D10 with internal pull-up
@@ -175,12 +194,24 @@ void checkSkillLevel() {
   // Read A3 paddle position on startup to determine skill level
   int startupReading = analogRead(A3);
   
-  if (startupReading < baseMinReading - 100) {
-    easyMode = true;
-    currentFaultPercent = EASY_FAULT_PERCENT;
+  if (PADDLE_REVERSE) {
+    // When paddle is reversed, easy mode is at the HIGH end instead of LOW
+    if (startupReading >= 950) {
+      easyMode = true;
+      currentFaultPercent = EASY_FAULT_PERCENT;
+    } else {
+      easyMode = false;
+      currentFaultPercent = DEFAULT_FAULT_PERCENT;
+    }
   } else {
-    easyMode = false;
-    currentFaultPercent = DEFAULT_FAULT_PERCENT;
+    // Normal mode - easy mode at LOW end
+    if (startupReading < baseMinReading - 100) {
+      easyMode = true;
+      currentFaultPercent = EASY_FAULT_PERCENT;
+    } else {
+      easyMode = false;
+      currentFaultPercent = DEFAULT_FAULT_PERCENT;
+    }
   }
 }
 
@@ -576,7 +607,14 @@ void drawPaddles() {
     int smoothedValue = sum / samplesUsed;
     
     // Map smoothed value to RIGHT paddle position (human player) using adjusted range
-    byte newPaddleBy = map(smoothedValue, adjustedMin, adjustedMax, 1, H - paddleLength - 1);
+    byte newPaddleBy;
+    if (PADDLE_REVERSE) {
+      // Reversed mapping - pot up = paddle down, pot down = paddle up
+      newPaddleBy = map(smoothedValue, adjustedMin, adjustedMax, H - paddleLength - 1, 1);
+    } else {
+      // Normal mapping - pot up = paddle up, pot down = paddle down
+      newPaddleBy = map(smoothedValue, adjustedMin, adjustedMax, 1, H - paddleLength - 1);
+    }
     
     // Paddle sensitivity
     // deadzone for human paddle to prevent jittering from POT value

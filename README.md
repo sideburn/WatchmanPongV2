@@ -36,5 +36,5 @@ You could just brute force cut the chip and RF tuner out with snips...
 - **pin A3** - paddle (with 10k pullup)
 - **pin 10** - start/quit  
 - **pin D11** - audio out  
-- **pin D9** - to 1k resistor to composite in  
 - **pin D7** - to 470 ohm to composite in
+- **pin D9** - to 1k resistor to composite in  
